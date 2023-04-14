@@ -5,7 +5,15 @@ import pandas as pd
 import openpyxl
 import matplotlib.pyplot as plt
 import string
-import os
+import os.path
+import sys
+import traceback
+
+
+def gen_err(text):
+    print(traceback.format_exc())
+    print(text)
+    sys.exit(1)
 
 
 def left_click(coord):
@@ -72,30 +80,35 @@ def copy_sic(param, chrom_coord, clicks1, link_key, clicks2, time_delay):
 def avg_sic(chrom_coord, spec_coord, range_coord, clicks2, time_delay=5):
     pg.moveTo((chrom_coord[0] + range_coord[0][0], chrom_coord[1] + range_coord[0][1]))
     pg.dragTo((chrom_coord[0] + range_coord[1][0], chrom_coord[1] + range_coord[1][1]), button='right')  # Right click and drag to average spectrum
-    process_coord = pg.locateCenterOnScreen('Process.png', confidence=0.7)
-    while process_coord is not None:
-        process_coord = pg.locateCenterOnScreen('Process.png', confidence=0.7)
+    combine_coord = pg.locateCenterOnScreen('Combine.png', confidence=0.7)
+    if combine_coord is None:
+        time.sleep(time_delay)
+    else:
+        while combine_coord is not None:
+            combine_coord = pg.locateCenterOnScreen('Combine.png', confidence=0.7)
     for i in clicks2:
         left_click((spec_coord[0] + i[0], spec_coord[1] + i[1]))  # Click on the 'Copy' button.
         pg.typewrite(['delete', 'enter'])
 
 
-def get_range(i, param_change_delay, stabil_delay):
+def get_range(i, param_change_delay=None, stabil_delay=None):
     if isinstance(i, list):
-        return i
+        ranges = i
+    elif 'output_file' in i:
+        df = pd.read_excel(i + '_optims_output.xlsx', sheet_name='Output')
+        ranges = [(round(i + (stabil_delay / 60), 3), round(i + (param_change_delay/ 60), 3)) for i in df.iloc[:, 0].tolist()]
     elif isinstance(i, str):
         df = pd.read_excel(i, sheet_name='Output')
         ranges = [(round(i + (stabil_delay / 60), 3), round(i + (param_change_delay/ 60), 3)) for i in df.iloc[:, 0].tolist()]
-        return ranges
+    return ranges
 
 
 def plot_data(df, x_header, y_headers, x_label, y_label, output_file, output_suf, legend=True):  # Plots the Normalized dataset
     fig = df.plot(x=x_header, y=y_headers, figsize=(6.5, 5), linewidth=1, kind='line',
                   legend=True, fontsize=9, cmap=plt.cm.tab10)
     # fig.set_title(exp_name, fontdict={'fontsize': 12, 'color': 'k'})
-    fig.legend(loc=0, frameon=False, fontsize=9)
-    fig.set_xlabel(x_label, fontdict={
-        'fontsize': 10})  # Fontdict can also include; 'family': 'Arial',  'color': 'r', 'weight': 'bold', 'fontsize':10, 'style': 'italic', etc
+    fig.legend(loc='best', frameon=False, fontsize=9).set_visible(legend)
+    fig.set_xlabel(x_label, fontdict={'fontsize': 10})  # Fontdict can also include; 'family': 'Arial',  'color': 'r', 'weight': 'bold', 'fontsize':10, 'style': 'italic', etc
     fig.set_ylabel(y_label, fontdict={'fontsize': 10})
     fig.spines['right'].set_visible(False)  # Removing the spines top and right
     fig.spines['top'].set_visible(False)
@@ -119,7 +132,7 @@ def save_excel(df, sheet_names, output_file):
         except PermissionError:
             input('Error! Export file open. Close and then press enter.')
         except:
-            print('Error') # other_error()
+            gen_err('Unknown error! Check inputs are formatted correctly. Else examine error messages and review code.')
 
 
 def add_excel_img(output_file, output_suf, sheet_name, pic_stag_num):
@@ -127,4 +140,3 @@ def add_excel_img(output_file, output_suf, sheet_name, pic_stag_num):
     wb = openpyxl.load_workbook(output_file + '.xlsx', data_only=True)
     wb[sheet_name].add_image(img, string.ascii_uppercase[pic_stag_num] + '1')  # convert the length of species +5 into corresponding letter, and input image at that column letter and row 1.
     wb.save(output_file + '.xlsx')  # Save the workbook with image.
-

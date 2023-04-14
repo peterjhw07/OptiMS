@@ -3,7 +3,7 @@
 import pyautogui as pg
 import time
 import os.path
-import master_grab as mg
+import func as mg
 
 
 def run_wash():

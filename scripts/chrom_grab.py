@@ -10,7 +10,7 @@
 
 import pandas as pd
 import pyautogui as pg
-import master_grab as mg
+import func
 
 
 def chrom_grab(ranges, names=None, time_delay=0):
@@ -21,6 +21,8 @@ def chrom_grab(ranges, names=None, time_delay=0):
     ------
     ranges : list of tuple or float
         Default (or starting) values of param_names
+    names : list of str
+        Names of species. If names is None, names are of the format 'm/z ' + str(value/range). Default is None
     time_delay : int
         Time delay used if software running slow. Default is 0
 
@@ -34,18 +36,18 @@ def chrom_grab(ranges, names=None, time_delay=0):
 
     clicks1 = [(60, 30), (60, 45)]  # Clicks required to move around interface.
     ranges = [i if isinstance(i, (tuple, list)) else tuple([i]) for i in ranges]
-    if names is None:
+    if not names:
         names = ['m/z ' + str(i[0]) + '-' + str(i[1]) if len(i) > 1 else 'm/z ' + str(i[0]) for i in ranges]
 
-    chrom_coord = mg.get_pic_loc('Chromatogram.png', '\'Chromatogram\' Chromatogram window title')  # Get location of chromatogram window
+    chrom_coord = func.get_pic_loc('Chromatogram.png', '\'Chromatogram\' Chromatogram window title')  # Get location of chromatogram window
 
-    # mg.copy_sic([], chrom_coord, [], '_', [(70, 50)], time_delay)
+    # func.copy_sic([], chrom_coord, [], '_', [(70, 50)], time_delay)
     tic_df = pd.read_clipboard(header=None)
     raw_df = pd.DataFrame(index=range(tic_df.shape[0]), columns=['Time', 'TIC', *names])
     raw_df.loc[:, 'Time'], raw_df.loc[:, 'TIC'] = tic_df.iloc[:, 0], tic_df.iloc[:, 1]
     norm_df = raw_df.loc[:, ['Time', *names]]
     for i in range(len(ranges)):  # Specifying that for every instance in species, run copy_sic, insert_sic and norm_sic
-        # mg.copy_sic(ranges[i], chrom_coord, clicks1, '_', [(70, 50)], time_delay)  # Select chromatogram region
+        # func.copy_sic(ranges[i], chrom_coord, clicks1, '_', [(70, 50)], time_delay)  # Select chromatogram region
         pg.typewrite(['delete', 'enter'])
         data = pd.read_clipboard(header=None)  # Make a new temporary dataframe of new species data. header=None so 1st row is copied, and not excluded as a label
         raw_df.loc[:, names[i]] = data.iloc[:, 1]  # Convert sum intensity to average intensity
@@ -77,15 +79,15 @@ def chrom_grab_process(raw_df, norm_df, output_file, get_csv=False, get_excel=Fa
         raw_df.to_csv(output_file + '_data_raw' + '.txt', index=None, sep=',', mode='w')
         norm_df.to_csv(output_file + '_data_norm' + '.txt', index=None, sep=',', mode='w')
     if get_excel is True:
-        mg.save_excel([raw_df, norm_df], ['raw', 'norm'], output_file)
+        func.save_excel([raw_df, norm_df], ['raw', 'norm'], output_file)
     if get_pic is True:
-        mg.plot_data(raw_df, raw_df.columns[0], raw_df.columns[1:], 'Time / min', 'Intensity',
+        func.plot_data(raw_df, raw_df.columns[0], raw_df.columns[1:], 'Time / min', 'Intensity',
                      output_file, '_plot_raw', legend=True)
-        mg.plot_data(norm_df, norm_df.columns[0], norm_df.columns[1:], 'Time / min', 'Relative Intensity',
+        func.plot_data(norm_df, norm_df.columns[0], norm_df.columns[1:], 'Time / min', 'Relative Intensity',
                      output_file, '_plot_norm', legend=True)
     if get_excel is True and get_pic is True:
-        mg.add_excel_img(output_file, '_plot_raw', 'raw', len(raw_df.columns))
-        mg.add_excel_img(output_file, '_plot_norm', 'norm', len(norm_df.columns))
+        func.add_excel_img(output_file, '_plot_raw', 'raw', len(raw_df.columns))
+        func.add_excel_img(output_file, '_plot_norm', 'norm', len(norm_df.columns))
 
 
 if __name__ == "__main__":
