@@ -3,7 +3,6 @@ import time
 
 # Input output file/folder locations
 software = 'MassLynx'
-input_file = r''  # input file location of previously saved parameter details (defined only).
 pic_folder = r''  # input folder location for saving pictures as r'folder_location\folder_name' if desired - else put False or r''
 output_file = r'C:\Users\Waters\Documents\OptiMS\Exp'  # input location of optimisation file output as r'file_location\name' - do not include file extension, e.g. C:\Users\Waters\Documents\OptiMS\MS_opti_output.
 
@@ -78,8 +77,8 @@ if get_optims is True:
                                            param_change_delay=param_change_delay, stabil_delay=stabil_delay,
                                            hold_end=hold_end, n_random_points=n_random_points,
                                            n_honing_points=n_honing_points, learn_coord=learn_coord,
-                                           software=software, input_file=input_file, pic_folder=pic_folder,
-                                           output_file=output_file, get_csv=False, get_Excel=True)
+                                           software=software, pic_folder=pic_folder, output_file=output_file,
+                                           get_csv=False, get_Excel=True)
 
 if get_chrom_grab is True:
     raw_df, norm_df = OptiMS.chrom_grab(chrom_ranges, time_delay=time_delay)

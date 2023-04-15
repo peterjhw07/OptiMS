@@ -45,11 +45,10 @@ def stop_aq_custom(stop_coord, other_coord):
 
 
 # Main OptiMS program
-def run_optims(param_names, default_params, param_bounds, tab_names=None, tab_rows=None, param_in_tab=None,
+def run_optims(param_names, default_params=None, param_bounds=None, tab_names=None, tab_rows=None, param_in_tab=None,
                method_type='hone', method_metric='max', break_fac=0, chrom_num=1, other_coord_num=0,
                param_change_delay=10, stabil_delay=2, hold_end=10, n_random_points=60, n_honing_points=60,
-               software=None, learn_coord=True, input_file=None, pic_folder=None, output_file=None,
-               get_csv=False, get_Excel=False):
+               software=None, learn_coord=True, pic_folder=None, output_file=None, get_csv=False, get_Excel=False):
     """
     Alters and optimises instrument conditions as specified
 
@@ -57,11 +56,13 @@ def run_optims(param_names, default_params, param_bounds, tab_names=None, tab_ro
     ------
     param_names : list of str
         Names of desired variable instrument parameters
-    default_params : list of float
-        Default (or starting) values of param_names
-    param_bounds : list of tuple of float
+    default_params : list of float or None, optional
+        Default (or starting) values of param_names. Default is None
+    param_bounds : list of tuple of float, str or None, optional
         Lower, upper and step-size of parameter bounds of param_names, in the form (lower, upper, step-size)
-        or defined values in the form (param 1, param 2, ...) (defined method_type only)
+        (all method_type except defined), or input params in form
+        [(param 1 value 1, param 2 value 1, ...), (param 1 value 2, param 2 value 2, ...), ...]
+        or str of previously exported '_optims_output.xlsx' file (both defined method_type only). Default is None
     tab_names : list of str or None, optional
         Names of tabs which param_names are located under. Optional if all param_names under single tab
     tab_rows : list of int or None, optional
@@ -73,7 +74,7 @@ def run_optims(param_names, default_params, param_bounds, tab_names=None, tab_ro
             exhaust - runs all possible combinations of parameters, as specified by param_bounds;
             random - runs random combinations of parameters, as specified by param_bounds;
             defined - runs set combinations of parameters, as specified by param_bounds
-                        or input_file if specified;
+                        or input_param if specified;
             simple - optimises instrument conditions by sequentially optimising each parameters,
                         as specified by param_bounds;
             hone - optimises instrument conditions by first running random combination of parameters,
@@ -108,9 +109,6 @@ def run_optims(param_names, default_params, param_bounds, tab_names=None, tab_ro
     software : str, optional
         Input software. Currently accepted softwares are MassLynx (Waters), Xcalibur (Thermo) and custom (define above).
         Default is None, which is not compatible with simple or hone method_type.
-    input_file : str or None, optional
-        Input Excel file for importation of input parameters and results (defined method_type only).
-        Must be or adapted from a previously exported output_file. Default is None (no file importation)
     pic_folder : str or None, optional
         Folder for exportation of screen grabbed pictures, for easier data processing.
         Default is None (screen grabs not taken)
@@ -272,7 +270,7 @@ def run_optims(param_names, default_params, param_bounds, tab_names=None, tab_ro
             error_perc.append((error[-1] / avg[-1]) * 100)
         return avg, error, error_perc
 
-    if chrom_num != 0 or not software:
+    if chrom_num != 0 and software:
         def sleep_avg_store(opti_store_df, data_store_filename, headers, exp_start_time, params, chrom_coord,
                             other_coord, snip_screen_coord, param_change_delay, stabil_delay):
             chrom_start_time = get_chrom_curr_time(chrom_coord, other_coord)
@@ -290,7 +288,7 @@ def run_optims(param_names, default_params, param_bounds, tab_names=None, tab_ro
     else:
         def sleep_avg_store(opti_store_df, data_store_filename, headers, exp_start_time, params, chrom_coord,
                             other_coord, snip_screen_coord, param_change_delay, stabil_delay):
-            chrom_start_time = datetime.now().timestamp() - exp_start_time
+            chrom_start_time = datetime.now().timestamp()  # - exp_start_time
             # time.sleep(max(0, param_change_delay - (
             # (datetime.now().timestamp() - exp_start_time) - (opti_store_df.shape[0] * param_change_delay))))
             time.sleep(param_change_delay)
@@ -344,11 +342,11 @@ def run_optims(param_names, default_params, param_bounds, tab_names=None, tab_ro
 
         tab_coord = [func.coord_find(i + ' tab') for i in tab_names]
         param_coord = [func.coord_find(i + ' box') for i in param_names]
-        chrom_coord = [func.coord_find('chromatogram ' + str(i)) for i in range(1, chrom_num + 1)]
+        chrom_coord = [func.coord_find('chromatogram ' + str(i + 1)) for i in range(chrom_num)]
         if chrom_num != 0 and 'MassLynx' in software:
             other_coord = [func.coord_find('copy chromatogram button')]
         else:
-            other_coord = [func.coord_find('other coordinate ' + str(i)) for i in range(other_coord_num)]
+            other_coord = [func.coord_find('other coordinate ' + str(i + 1)) for i in range(other_coord_num)]
         if os.path.exists(pic_folder):
             snip_screen_coord.append(func.coord_find('first corner of snip window'))
             snip_screen_coord.append(func.coord_find('opposite corner of snip window'))
@@ -361,6 +359,11 @@ def run_optims(param_names, default_params, param_bounds, tab_names=None, tab_ro
         all_coord = pickle.load(inp)
     tab_coord, param_coord, chrom_coord, other_coord, snip_screen_coord, stop_coord = all_coord
 
+    if not tab_names:
+        tab_names = [None]
+        tab_coord = [(0, 0)]
+    if not param_in_tab:
+        param_in_tab = [1] * len(param_names)
     if tab_rows and min(tab_rows) != max(tab_rows):
         tabs_x, tabs_y = zip(*tab_coord)
         tab_y_upper = np.mean(tabs_y[tab_rows.index(1)])
@@ -368,26 +371,25 @@ def run_optims(param_names, default_params, param_bounds, tab_names=None, tab_ro
     else:
         tab_rows = [1] * len(tab_names)
 
-    if not param_in_tab:
-        param_in_tab = [1] * len(param_names)
-
-    if not len(param_names) == len(default_params) == len(param_bounds) == len(param_in_tab):
+    if not 'defined' in method_type and not len(param_names) == len(default_params) == len(param_bounds) == len(param_in_tab):
         print('Error! Mismatch between number of param_names, default_params, param_bounds and param_in_tab.')
         sys.exit(1)
 
-    param_store_df = pd.DataFrame({'Parameter': ['method_type', 'method_metric', 'tab_names', 'tab_rows',
-                                                 'param_names', 'default_params', 'param_bounds', 'param_in_tab',
-                                                 'chrom_num', 'param_change_delay', 'stabil_delay', 'hold_end'],
-                                   'Values': [method_type, method_metric, tab_names, tab_rows,
-                                              param_names, default_params, param_bounds, param_in_tab,
-                                              chrom_num, param_change_delay, stabil_delay, hold_end]})
+    param_store_df = pd.DataFrame({'Parameter': ['param_names', 'default_params', 'param_bounds', 'tab_names',
+                                                 'tab_rows', 'param_in_tab', 'method_type', 'method_metric',
+                                                 'break_fac', 'chrom_num', 'param_change_delay', 'stabil_delay',
+                                                 'hold_end', 'n_random_points', 'n_honing_points'],
+                                   'Values': [param_names, default_params, param_bounds, tab_names,
+                                              tab_rows, param_in_tab, method_type, method_metric,
+                                              break_fac, chrom_num, param_change_delay, stabil_delay,
+                                              hold_end, n_random_points, n_honing_points]})
 
     if chrom_num != 0:
         headers = ['Chrom time', *param_names, 'Chrom averages', 'Chrom errors', 'Chrom errors %', 'Metric']
     else:
         headers = ['Chrom time', *param_names]
-    tab_rows = [tab_rows_edit - 1 for tab_rows_edit in tab_rows]
-    param_in_tab = [tabs_edit - 1 for tabs_edit in param_in_tab]
+    tab_rows = [i - 1 for i in tab_rows]
+    param_in_tab = [i - 1 for i in param_in_tab]
     stabil_delay = stabil_delay / 60
 
     find_tab_row_1 = find_tab_row()
@@ -416,10 +418,15 @@ def run_optims(param_names, default_params, param_bounds, tab_names=None, tab_ro
         param_store_df = pd.concat([param_store_df, pd.DataFrame({'Parameter': ['param_combi'],
                                                                   'Values': [param_combi]})], ignore_index=True)
     elif 'defined' in method_type:
-        param_store_df = pd.read_excel(input_file, sheet_name='Params')
-        param_combi = param_store_df.at[param_store_df.index[param_store_df['Parameter'] == 'param_combi'].tolist()[0],
+        if isinstance(param_bounds, list):
+            param_combi = param_bounds
+        elif isinstance(param_bounds, str):
+            param_store_df = pd.read_excel(param_bounds, sheet_name='Params')
+            param_combi = param_store_df.at[param_store_df.index[param_store_df['Parameter'] == 'param_combi'].tolist()[0],
                                         'Values']
-        param_combi = eval(param_combi)
+            param_combi = eval(param_combi)
+        param_store_df = pd.concat([param_store_df, pd.DataFrame({'Parameter': ['param_combi'],
+                                                                  'Values': [param_combi]})], ignore_index=True)
 
     if any(i in method_type for i in ('exhaust', 'random', 'defined')):
         opti_store_df = pd.DataFrame(columns=headers)
@@ -511,7 +518,7 @@ def run_optims(param_names, default_params, param_bounds, tab_names=None, tab_ro
         print('WARNING! ' + output_file + '_optims_output.txt already exists and will be overwritten.')
     if get_Excel and os.path.exists(output_file + '_optims_output.xlsx'):
         print('WARNING! ' + output_file + '_optims_output.xlsx already exists and will be overwritten.')
-    if (get_csv and os.path.exists(output_file + '.txt')) or (get_Excel and os.path.exists(output_file + '.xlsx')):
+    if (get_csv and os.path.exists(output_file + '_optims_output.txt')) or (get_Excel and os.path.exists(output_file + '_optims_output.xlsx')):
         print('Press enter to continue.')
         input()
     if get_csv:
@@ -531,15 +538,15 @@ if __name__ == "__main__":
     method_metric = 'max'  # input metric defition: 'max' for maximising intensity of first chromatogram; 'ratio' for maximising intensity of first chromatogram to second; 'custom' to define custom metric (below)
     method_break = 0  # input a factor for which the method will break and move onto the next parameter, if the new metric falls below method_break * previous (simple only).
     n_random_points = 5  # input number of random combinations of parameters to guess, must be >0 (random and hone only).
-    n_honing_points = 60  # input number of subsequent honing points required, must be >0 (hone only).
+    n_honing_points = 5  # input number of subsequent honing points required, must be >0 (hone only).
 
     # Input parameter details, including bounds
     tab_names = ['ES', 'Instrument']  # input names of param_in_tab in form ['Tab 1', ..., 'Tab X'] or None or [] if only tab used.
     tab_rows = []  # input row of each tab in form [1, ..., 2] or None or [] if all param_in_tab on same row. Only two rows are currently supported.
     param_names = ['Capillary', 'Sampling Cone', 'Source Offset', 'Nebuliser', 'TrapCE', 'TransCE']  # input names of parameters in form ['Param 1, ..., Param X']
     default_params = [3, 0, 50, 3, 5, 0]  # input default start values in the form [0, ..., 0].
-    param_bounds = [(0, 5, 1), (0, 100, 10), (0, 100, 10), (2.5, 6, 0.5), (0, 10, 1), (0, 10, 1)]  # input parameters bounds (lower bound, upper bound, increment value) in form e.g. [(X1, X2, X3), ..., (Y1, Y2, Y3)].
-    param_in_tab = [1, 1, 1, 1, 2, 2]  # enter param_in_tab required for each parameter in form [1, ..., X] or None or [] if all parameters in Tab 1.
+    param_bounds = [(0, 5, 1), (0, 100, 10), (0, 100, 10), (2.5, 6, 0.5), (0, 10, 1), (0, 10, 1)]  # input parameters bounds (lower bound, upper bound, increment value) in form e.g. [(X1, X2, X3), ..., (Y1, Y2, Y3)] (all methods except defined) or input params in form [(param 1 value 1, param 2 value 1, ...), (param 1 value 2, param 2 value 2, ...), ...] or location of previously saved parameter details (defined only).
+    param_in_tab = []  # enter param_in_tab required for each parameter in form [1, ..., X] or None or [] if all parameters in Tab 1.
     chrom_num = 0  # enter number of chromatograms in use. Input 0 if chromatograms cannot be copied. Else input integer > 0.
     other_coord_num = 1
 
@@ -552,16 +559,15 @@ if __name__ == "__main__":
 
     # Input output file/folder locations
     software = 'custom'  # input software in use. Currently accepted softwares are MassLynx (Waters), Xcalibur (Thermo) and custom (define above)
-    input_file = r''  # input file location of previously saved parameter details (defined only).
     pic_folder = r''  # input folder location for saving pictures as r'folder_location\folder_name' if desired - else put False or r''
     output_file = r'C:\Users\Waters\Documents\OptiMS\Exp'  # input location of optimisation file output as r'file_location\name' - do not include file extension, e.g. C:\Users\Waters\Documents\OptiMS\Exp.
 
-    opti_param, opti_store_df = run_optims(param_names, default_params, param_bounds, tab_names=tab_names,
-                                           tab_rows=tab_rows, param_in_tab=param_in_tab, method_type=method_type,
-                                           method_metric=method_metric, break_fac=method_break, chrom_num=chrom_num,
-                                           other_coord_num=other_coord_num, param_change_delay=param_change_delay,
-                                           stabil_delay=stabil_delay, hold_end=hold_end,
-                                           n_random_points=n_random_points, n_honing_points=n_honing_points,
-                                           software=software, learn_coord=learn_coord, input_file=input_file,
+    opti_param, opti_store_df = run_optims(param_names, default_params=default_params, param_bounds=param_bounds,
+                                           tab_names=tab_names, tab_rows=tab_rows, param_in_tab=param_in_tab,
+                                           method_type=method_type, method_metric=method_metric, break_fac=method_break,
+                                           chrom_num=chrom_num, other_coord_num=other_coord_num,
+                                           param_change_delay=param_change_delay, stabil_delay=stabil_delay,
+                                           hold_end=hold_end, n_random_points=n_random_points,
+                                           n_honing_points=n_honing_points, software=software, learn_coord=learn_coord,
                                            pic_folder=pic_folder, output_file=output_file,
                                            get_csv=False, get_Excel=True)

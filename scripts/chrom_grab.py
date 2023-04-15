@@ -10,7 +10,10 @@
 
 import pandas as pd
 import pyautogui as pg
+import warnings
 import func
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 
 def chrom_grab(ranges, names=None, time_delay=0):
@@ -76,22 +79,22 @@ def chrom_grab_process(raw_df, norm_df, output_file, get_csv=False, get_excel=Fa
 
     """
     if get_csv is True:  # Output data as csv files
-        raw_df.to_csv(output_file + '_data_raw' + '.txt', index=None, sep=',', mode='w')
-        norm_df.to_csv(output_file + '_data_norm' + '.txt', index=None, sep=',', mode='w')
+        raw_df.to_csv(output_file + '_chrom_data_raw' + '.txt', index=None, sep=',', mode='w')
+        norm_df.to_csv(output_file + '_chrom_data_norm' + '.txt', index=None, sep=',', mode='w')
     if get_excel is True:
-        func.save_excel([raw_df, norm_df], ['raw', 'norm'], output_file)
+        func.save_excel([raw_df, norm_df], ['raw', 'norm'], output_file + '_chrom_data')
     if get_pic is True:
         func.plot_data(raw_df, raw_df.columns[0], raw_df.columns[1:], 'Time / min', 'Intensity',
-                     output_file, '_plot_raw', legend=True)
+                     output_file + '_chrom_plot_raw', legend=True)
         func.plot_data(norm_df, norm_df.columns[0], norm_df.columns[1:], 'Time / min', 'Relative Intensity',
-                     output_file, '_plot_norm', legend=True)
+                     output_file+ '_chrom_plot_norm', legend=True)
     if get_excel is True and get_pic is True:
-        func.add_excel_img(output_file, '_plot_raw', 'raw', len(raw_df.columns))
-        func.add_excel_img(output_file, '_plot_norm', 'norm', len(norm_df.columns))
+        func.add_excel_img(output_file + '_chrom_data', output_file + '_chrom_plot_raw', 'raw', len(raw_df.columns))
+        func.add_excel_img(output_file + '_chrom_data', output_file + '_chrom_plot_norm', 'norm', len(norm_df.columns))
 
 
 if __name__ == "__main__":
-    ranges = [(922.8727, 923.8727), 924.8776, 925.8742, 926.8714, 927.8824, 928.8806, 929.8660, 930.8654, 931.8652, 932.8655, 933.8665]
+    ranges = [922.8727, 923.8727, 924.8776, 925.8742, 926.8714, 927.8824, 928.8806, 929.8660, 930.8654, 931.8652, 932.8655, 933.8665]
     time_delay = 0  # Insert a time delay between operations if MassLynx is running slow in format
     output_file = r'C:\Users\Peter\Documents\Postdoctorate\Programs\chrom_grab_test'  # Input the directory to save processed data, eg: output_dir = r'C:\Users\IanC\Documents\Experiments'
 

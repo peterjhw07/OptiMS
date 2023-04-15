@@ -2,7 +2,11 @@
 
 import pandas as pd
 import pyautogui as pg
+import warnings
 import func
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
 def mz_grab(ranges, scan_time, param_change_delay=None, stabil_delay=None, names=None, time_delay=0):
@@ -43,7 +47,7 @@ def mz_grab(ranges, scan_time, param_change_delay=None, stabil_delay=None, names
 
     all_spec = []
     for i in range(len(ranges)):
-        # func.copy_sic(ranges[i], chrom_coord, clicks1, 'tab', [(70, 50)], time_delay)  # Input chromatogram bounds
+        # func.copy_sic(ranges[i], chrom_coord, clicks1, ['tab'], [(70, 50)], time_delay)  # Input chromatogram bounds
         # func.avg_sic(chrom_coord, spec_coord, range_coord, [(90, 50)])  # Get average of chromatogram region and copy spec
         spec = pd.read_clipboard(header=None)
         spec.columns=['m/z', names[i]]  # Make DataFrame from spec
@@ -72,16 +76,16 @@ def mz_grab_process(data, output_file, get_csv=False, get_excel=False, get_pic=F
     """
     if get_csv is True:  # Output data as csv files
         for i in range(len(data)):
-            data[i].to_csv(output_file + data[i].columns[1] + '.txt', index=None, sep=',', mode='w')
+            data[i].to_csv(output_file + '_' + data[i].columns[1] + '.txt', index=None, sep=',', mode='w')
     if get_excel is True:
-        func.save_excel(data, names, output_file)
+        func.save_excel(data, [data[i].columns[1] for i in range(len(data))], output_file + '_mz_data')
     if get_pic is True:
         for i in range(len(data)):
             func.plot_data(data[i], data[i].columns[0], data[i].columns[1], 'm/z', 'Intensity',
-                         output_file, data[i].columns[1], legend=False)
+                         output_file + '_' + data[i].columns[1], legend=False)
     if get_excel is True and get_pic is True:
         for i in range(len(data)):
-            func.add_excel_img(output_file, data[i].columns[1], data[i].columns[1], len(data[i].columns))
+            func.add_excel_img(output_file + '_mz_data', output_file + '_' + data[i].columns[1], data[i].columns[1], len(data[i].columns))
 
 
 if __name__ == '__main__':
