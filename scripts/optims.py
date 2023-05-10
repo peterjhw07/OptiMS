@@ -84,6 +84,8 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
         Metric for determining optimal conditions. Default is 'max'. Metrics are:
             max - maximises intensity of chromatogram 1. Default;
             max_2 - maximises intensity of chromatogram 2;
+            sum - sums intensities of all chromatograms;
+            sum_2 - sums intensities of second chromatogram to last chromatogram;
             ratio - maximises ratio of chromatogram 1 to chromatogram 2;
             custom - metric defined by the user
     break_fac : float
@@ -251,6 +253,12 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
     elif 'max_2' in method_metric:
         def get_metric(avg_data):
             return avg_data[1]
+    elif 'sum' in method_metric:
+        def get_metric(avg_data):
+            return sum(avg_data)
+    elif 'sum_2' in method_metric:
+        def get_metric(avg_data):
+            return sum(avg_data[1:])
     elif 'ratio' in method_metric:
         def get_metric(avg_data):
             return avg_data[0] / avg_data[1]
@@ -429,6 +437,8 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
                                                                   'Values': [param_combi]})], ignore_index=True)
 
     if any(i in method_type for i in ('exhaust', 'random', 'defined')):
+        if isinstance(param_change_delay, (int, float)):
+            param_change_delay = [param_change_delay] * len(param_combi)
         opti_store_df = pd.DataFrame(columns=headers)
         opti_store_df.to_pickle(data_store_filename)
         exp_start_time = datetime.now().timestamp()
@@ -437,7 +447,7 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
                 change_all_params(param_names, tab_coord, param_in_tab, tab_rows, param_coord, param_combi[i])
                 opti_store_df, metric_recent = sleep_avg_store(opti_store_df, data_store_filename, headers,
                                                                exp_start_time, param_combi[i], chrom_coord, other_coord,
-                                                               snip_screen_coord, param_change_delay, stabil_delay)
+                                                               snip_screen_coord, param_change_delay[i], stabil_delay)
         except IndexError:
             chrom_copy_error()
         except Exception:
