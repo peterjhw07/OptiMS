@@ -245,24 +245,25 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
     if chrom_num == 0:
         def get_metric(avg_data):
             return 'Unknown'
-    elif 'max' not in method_metric and 'ratio' not in method_metric and 'custom' not in method_metric:
+    elif 'max' not in method_metric.lower() and 'ratio' not in method_metric.lower() \
+            and 'custom' not in method_metric.lower():
         method_metric = input('Invalid method_metric given. Enter valid method_metric \n')
-    if 'max' in method_metric:
+    if method_metric.lower() == 'max':
         def get_metric(avg_data):
             return avg_data[0]
-    elif 'max_2' in method_metric:
+    elif method_metric.lower() == 'max_2':
         def get_metric(avg_data):
             return avg_data[1]
-    elif 'sum' in method_metric:
+    elif method_metric.lower() == 'sum':
         def get_metric(avg_data):
             return sum(avg_data)
-    elif 'sum_2' in method_metric:
+    elif method_metric.lower() == 'sum_2':
         def get_metric(avg_data):
             return sum(avg_data[1:])
-    elif 'ratio' in method_metric:
+    elif method_metric.lower() == 'ratio':
         def get_metric(avg_data):
             return avg_data[0] / avg_data[1]
-    elif 'custom' in method_metric:
+    elif method_metric.lower() == 'custom':
         def get_metric(avg_data):
             return custom_metric(avg_data)
 
