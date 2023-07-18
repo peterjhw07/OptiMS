@@ -4,7 +4,7 @@ import time
 # Input output file/folder locations
 software = 'MassLynx'
 pic_folder = r''  # input folder location for saving pictures as r'folder_location\folder_name' if desired - else put False or r''
-output_file = r'C:\Users\Waters\Documents\OptiMS\Exp'  # input location of optimisation file output as r'file_location\name' - do not include file extension, e.g. C:\Users\Waters\Documents\OptiMS\MS_opti_output.
+output_file = r'C:\Users\Peter\Documents\Postdoctorate\Work\OptiMS'  # input location of optimisation file output as r'file_location\name' - do not include file extension, e.g. C:\Users\Waters\Documents\OptiMS\MS_opti_output.
 
 # Input system times
 scan_time = 1  # Experimental scan time (req. for mz_grab only)
@@ -34,9 +34,16 @@ chrom_num = 0  # enter number of chromatograms in use. Input 0 if chromatograms 
 
 learn_coord = False  # input True if wanting to learn coordinates of required param_in_tab/boxes/chromatograms, else False.
 
+# Define optims_grab parameters
+get_optims_grab = False  # Set true if wanting to grab optims output for other species, else False
+optims_import_file = r'C:\Users\Peter\Documents\Postdoctorate\Work\CBD to THC\Tandem MS\PJHW23022301_CBD_100UM_TRANSCE_0-30V_MS_opti_output - optims_grab_test.xlsx'  # Input filename of previous OptiMS output file, including extension, eg: import_file = r'C:\Users\IanC\Documents\Experiments\Exp_optims_output.xlsx'
+optims_ranges = 2  # Input int number of chromatograms (e.g. 3) or list of int or tuples (e.g. [922.8727, (923.8727, 924.8776)]
+optims_names = []  # Insert desired names for regions as list, e.g. ['Region 1', 'Region 2', ...] or leave empty for automated naming, i.e. [].
+
 # Define chrom_grab parameters
-get_chrom_grab = True  # Set true if wanting to grab mass spectra for certain chromatogram regions, else False
-chrom_ranges = [922.8727, (924.8776, 925.8742), 926.8714, 927.8824, (928.8806, 929.8660)]
+get_chrom_grab = True  # Set true if wanting to grab multiple chromatograms, else False
+chrom_ranges = [922.8727, (924.8776, 925.8742), 926.8714, 927.8824, (928.8806, 929.8660)]  # Input list of mz values for extraction of chromatograms, where mz values are int (peak close to value) or tuple (range). E.g. [922.8727, (923.8727, 924.8776)]
+chrom_names = []  # Insert desired names for regions as list, e.g. ['Region 1', 'Region 2', ...] or leave empty for automated naming, i.e. [].
 
 # chrom_ranges = [341.0464, 357.0369, 446.9530, 368.8987, 393.9927, 681.0517, 511.0449, 650.8911, 126.9097, 865.0399, 789.0016, 779.2259, 826.8957, 829.0286, 555.9756, 484.8680, 523.9863, 569.9814, 582.6945, 1391.0182, 532.8248] # Enter m/z of ions of interest to be copied, eg: species = [100, 150, 1234]
 # chrom_ranges = [818.7261, 582.7011, 498.9158, 490.7824, 126.9856, 296.9910, 664.8858, 834.7020, 835.0049, 926.8979] # Enter m/z of ions of interest to be copied, eg: species = [100, 150, 1234]
@@ -65,7 +72,7 @@ chrom_ranges = [922.8727, (924.8776, 925.8742), 926.8714, 927.8824, (928.8806, 9
 # chrom_ranges = [922.8727, 924.8776, 925.8742, 926.8714, 927.8824, 928.8806, 929.8660, 930.8654, 931.8652, 932.8655, 933.8665]  # TF_01-191 (PdL2IPh)-926
 
 # Define mz_grab parameters
-get_mz_grab = True  # Set true if wanting to grab mass spectra for certain chromatogram regions, else False
+get_mz_grab = True  # Set true if wanting to grab average mass spectra for certain chromatogram regions, else False
 # mz_ranges = 'output_file'  # [(0, 0.1), (0.2, 0.5), (1, 1.5)]
 mz_ranges = r'C:\Users\Peter\Documents\Postdoctorate\Work\CBD to THC\Tandem MS\PJHW23022308_D9-THC_50UM_D8-THC_50UM_TRAPCE_0-30V_MS_opti_output.xlsx'  # Input list of tuples for ranges for averaging or OptiMS output filename in form r'filename' or just 'output_file', using the filename from above
 mz_names = [str(i) + 'V' for i in range(32)]  # Insert desired names for regions as list, e.g. ['Region 1', 'Region 2', ...] or leave empty for automated naming, i.e. [].
@@ -79,6 +86,11 @@ if get_optims is True:
                                            n_honing_points=n_honing_points, learn_coord=learn_coord,
                                            software=software, pic_folder=pic_folder, output_file=output_file,
                                            get_csv=False, get_Excel=True)
+
+if get_optims_grab is True:
+    output_df = OptiMS.optims_grab(optims_import_file, optims_ranges, param_change_delay, stabil_delay,
+                            names=optims_names, software=software, learn_coord=learn_coord, time_delay=time_delay)
+    OptiMS.optims_grab_process(output_df, optims_import_file)
 
 if get_chrom_grab is True:
     raw_df, norm_df = OptiMS.chrom_grab(chrom_ranges, time_delay=time_delay)
