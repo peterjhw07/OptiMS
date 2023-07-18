@@ -44,16 +44,16 @@ def chrom_grab(ranges, names=None, time_delay=0):
 
     chrom_coord = func.get_pic_loc('Chromatogram.png', '\'Chromatogram\' Chromatogram window title')  # Get location of chromatogram window
 
-    # func.copy_sic([], chrom_coord, [], '_', [(70, 50)], time_delay)
+    # func.copy_sic([], chrom_coord, [], '_', [(70, 50)], time_delay)  # Select chromatogram region - turn off when testing offline
     tic_df = pd.read_clipboard(header=None)
     raw_df = pd.DataFrame(index=range(tic_df.shape[0]), columns=['Time', 'TIC', *names])
     raw_df.loc[:, 'Time'], raw_df.loc[:, 'TIC'] = tic_df.iloc[:, 0], tic_df.iloc[:, 1]
-    norm_df = raw_df.loc[:, ['Time', *names]]
     for i in range(len(ranges)):  # Specifying that for every instance in species, run copy_sic, insert_sic and norm_sic
-        # func.copy_sic(ranges[i], chrom_coord, clicks1, '_', [(70, 50)], time_delay)  # Select chromatogram region
+        # func.copy_sic(ranges[i], chrom_coord, clicks1, '_', [(70, 50)], time_delay)  # Select chromatogram region - turn off when testing offline
         pg.typewrite(['delete', 'enter'])
         data = pd.read_clipboard(header=None)  # Make a new temporary dataframe of new species data. header=None so 1st row is copied, and not excluded as a label
         raw_df.loc[:, names[i]] = data.iloc[:, 1]  # Convert sum intensity to average intensity
+    norm_df = raw_df.loc[:, ['Time', *names]]
     norm_df.loc[:, names] = raw_df.loc[:, names].div(raw_df.loc[:, 'TIC'], axis=0)
     return raw_df, norm_df
 
@@ -82,7 +82,7 @@ def chrom_grab_process(raw_df, norm_df, output_file, get_csv=False, get_excel=Fa
         raw_df.to_csv(output_file + '_chrom_data_raw' + '.txt', index=None, sep=',', mode='w')
         norm_df.to_csv(output_file + '_chrom_data_norm' + '.txt', index=None, sep=',', mode='w')
     if get_excel is True:
-        func.save_excel([raw_df, norm_df], ['raw', 'norm'], output_file + '_chrom_data')
+        func.export_excel([raw_df, norm_df], output_file + '_chrom_data.xlsx', ['raw', 'norm'])
     if get_pic is True:
         func.plot_data(raw_df, raw_df.columns[0], raw_df.columns[1:], 'Time / min', 'Intensity',
                      output_file + '_chrom_plot_raw', legend=True)

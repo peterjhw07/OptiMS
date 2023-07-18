@@ -78,7 +78,7 @@ def mz_grab_process(data, output_file, get_csv=False, get_excel=False, get_pic=F
         for i in range(len(data)):
             data[i].to_csv(output_file + '_' + data[i].columns[1] + '.txt', index=None, sep=',', mode='w')
     if get_excel is True:
-        func.save_excel(data, [data[i].columns[1] for i in range(len(data))], output_file + '_mz_data')
+        func.export_excel(data, output_file + '_mz_data.xlsx', [data[i].columns[1] for i in range(len(data))])
     if get_pic is True:
         for i in range(len(data)):
             func.plot_data(data[i], data[i].columns[0], data[i].columns[1], 'm/z', 'Intensity',

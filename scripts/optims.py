@@ -1,4 +1,4 @@
-"""Automated optimisation and/or parameter changing program - designed for use with Waters MassLynx"""
+"""Automated optimisation and/or parameter changing program - originally designed for use with Waters MassLynx"""
 
 from datetime import datetime
 from itertools import product
@@ -15,6 +15,7 @@ import random
 # import timeit
 import warnings
 import func
+import instrument_map
 
 
 # These first four functions only apply if optimising mass spectrum parameters
@@ -23,25 +24,18 @@ def custom_metric(avg_data):
     return avg_data[1]  # print('Design custom metric')
 
 
-# If using a custom software, input any sequence required for refreshing the chromatogram
-def chrom_refresh_custom(other_coord):
-    return None
+def param_list(bounds):
+    return np.linspace(bounds[0], bounds[1], int(abs(bounds[1] - bounds[0]) / bounds[2]) + 1)
 
 
-# If using a custom software, input any lines required to get the chromatogram data into a pandas.DataFrame format
-# with headers 'Time' and 'Intensity'
-def get_chrom_custom(chrom_coord, other_coord):
-    func.left_click(chrom_coord)
-    func.left_click(other_coord[0])
-    data = pd.read_clipboard(header=None)
-    data.columns = ['Time', 'Intensity']
-    return data
+def chrom_copy_error():
+    return func.gen_err(
+        'Suggested error! Cannot copy chromatogram. Set chrom_num=0 or check coordinates and ensure chromatogram is visible.')
 
 
-# If using a custom software, input any sequence required for stopping the aquisition
-def stop_aq_custom(stop_coord, other_coord):
-    func.left_click(stop_coord)
-    return None
+def other_error():
+    return func.gen_err(
+        'Unknown error! Check inputs are formatted correctly. Else examine error messages and review code.')
 
 
 # Main OptiMS program
@@ -69,7 +63,7 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
         Row locations of tab_names, i.e. if tabs are on two sets of rows, input tab_names location as e.g. [1, 1, 2, ...]
     param_in_tab : list of int or None, optional
         Locations of param_names under tab_names, e.g. [1, 1, 2, ...]
-    method_type : str
+    method_type : str, optional
         Method for altering and optimising instrument conditions. Methods are:
             exhaust - runs all possible combinations of parameters, as specified by param_bounds;
             random - runs random combinations of parameters, as specified by param_bounds;
@@ -80,7 +74,7 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
             hone - optimises instrument conditions by first running random combination of parameters,
                     as specified by param_bounds, then choosing the best combination
                     and then making minor alterations to parameters to hone in on best solution
-    method_metric : str
+    method_metric : str, optional
         Metric for determining optimal conditions. Default is 'max'. Metrics are:
             max - maximises intensity of chromatogram 1. Default;
             max_2 - maximises intensity of chromatogram 2;
@@ -88,25 +82,27 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
             sum_2 - sums intensities of second chromatogram to last chromatogram;
             ratio - maximises ratio of chromatogram 1 to chromatogram 2;
             custom - metric defined by the user
-    break_fac : float
+    break_fac : float, optional
         Factor only for the 'simple' method, for which the method will break if the new set of parameters
         with the new method_metric < break_fac * old method_metric. Default is 0, i.e. never breaks
-    chrom_num : int
+    chrom_num : int, optional
         Number of chromatograms desired to be recorded. Default is 1.
         If chrom_num = 0, no chromatogram and hence chromatogram averages, errors or metrics will be recorded,
         hence is not compatible with simple or hone method_type.
-    param_change_delay : float
+    other_coord_num : int, optional
+        Number of other coordinates required for abstracting chromatogram data
+    param_change_delay : float, optional
         Time between parameter changes in seconds. Default is 10
-    stabil_delay : float
+    stabil_delay : float, optional
         Time required for instrument to stabilise, following parameter changes in seconds. Default is 2
-    hold_end : float
+    hold_end : float, optional
         Time for which determined optimised conditions are held at the end of optimisation in seconds.
         If chrom_num = 0, hold_end does not apply. Default is 60
-    n_random_points : int
+    n_random_points : int, optional
         Number of random points for use in random and hone method_type only. Default is 60
-    n_hone_points : int
+    n_hone_points : int, optional
         Number of honing points for use in hone method_type only. Default is 60
-    learn_coord : bool
+    learn_coord : bool, optional
         Specifies whether on-screen coordinates need to be learnt. Default is True
     software : str, optional
         Input software. Currently accepted softwares are MassLynx (Waters), Xcalibur (Thermo) and custom (define above).
@@ -131,8 +127,9 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
         Optimised parameters. Returns 'Unknown' if chrom_num = 0
     """
 
-    def param_list(bounds):
-        return np.linspace(bounds[0], bounds[1], int(abs(bounds[1] - bounds[0]) / bounds[2]) + 1)
+    chrom_refresh = instrument_map.chrom_refresh_func_map.get(software)
+    get_chrom = instrument_map.get_chrom_func_map.get(software)
+    stop_aq = instrument_map.stop_aq_func_map.get(software)
 
     class find_tab_row:
         last_i = 1
@@ -194,49 +191,8 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
 
     if 'MassLynx' in software:
         other_coord_num = 1
-
-        def chrom_refresh(other_coord):
-            return None
-
-        def get_chrom(chrom_coord, other_coord):
-            func.left_click(chrom_coord)
-            func.left_click(other_coord[0])
-            data = pd.read_clipboard(header=None)
-            # data = pd.DataFrame(pd.read_clipboard(header=None), columns=['Time', 'Intensity'])
-            data.columns = ['Time', 'Intensity']
-            return data
-
-        def stop_aq(stop_coord, other_coord):
-            func.left_click(stop_coord)
-            pg.typewrite(['enter'])
-
-    if 'Xcalibur' in software:
+    elif 'Xcalibur' in software:
         other_coord_num = 0
-
-        def chrom_refresh(other_coord):
-            pg.typewrite(['F5'])
-
-        def get_chrom(chrom_coord, other_coord):
-            pg.click(chrom_coord[0], chrom_coord[1], button='right')
-            pg.click(chrom_coord[0] + 10, chrom_coord[1] + 50)
-            pg.click(chrom_coord[0] + 20, chrom_coord[1] + 50)
-            data = pd.read_clipboard(header=3)
-            data.columns = ['Time', 'Intensity']
-            return data
-
-        def stop_aq(stop_coord, other_coord):
-            func.left_click(stop_coord)
-
-    if 'custom' in software:
-
-        def chrom_refresh(other_coord):
-            chrom_refresh_custom(other_coord)
-
-        def get_chrom(chrom_coord, other_coord):
-            return get_chrom_custom(chrom_coord, other_coord)
-
-        def stop_aq(stop_coord, other_coord):
-            stop_aq_custom(stop_coord, other_coord)
 
     def get_chrom_curr_time(chrom_coord, other_coord):
         chrom_refresh(other_coord)
@@ -336,18 +292,12 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
     data_store_filename = 'data_store_file.pkl'
     param_store_filename = 'param_store_file.pkl'
 
-    def chrom_copy_error():
-        return func.gen_err('Suggested error! Cannot copy chromatogram. Set chrom_num=0 or check coordinates and ensure chromatogram is visible.')
-
-    def other_error():
-        return func.gen_err('Unknown error! Check inputs are formatted correctly. Else examine error messages and review code.')
-
     if any(i in method_type for i in ('simple', 'hone')) and chrom_num == 0:
         print('Simple and hone method types are not compatible with chrom_num = 0. Please select a different method.')
         sys.exit()
 
     if learn_coord:
-        tab_coord, param_coord, chrom_coord, other_coord, snip_screen_coord = [], [], [], [], []
+        tab_coord, param_coord, chrom_coord, other_coord, snip_screen_coord = [], [], [], [], []  # is this needed?
 
         tab_coord = [func.coord_find(i + ' tab') for i in tab_names]
         param_coord = [func.coord_find(i + ' box') for i in param_names]
@@ -535,7 +485,7 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
     if get_csv:
         opti_store_df.to_csv(output_file + '_optims_output.txt', header=headers, index=None, sep=' ', mode='w')
     if get_Excel:
-        func.save_excel([param_store_df, opti_store_df], ['Params', 'Output'], output_file + '_optims_output')
+        func.export_excel([param_store_df, opti_store_df], output_file + '_optims_output.xlsx', ['Params', 'Output'])
 
     # print(opti_store_df)
     # print(opti_param)
@@ -564,7 +514,7 @@ if __name__ == "__main__":
     learn_coord = True  # input True if wanting to learn coordinates of required param_in_tab/boxes/chromatograms, else False.
 
     # Input system times
-    param_change_delay = 5  # input delay between change of parameters in seconds
+    param_change_delay = 10  # input delay between change of parameters in seconds
     stabil_delay = 2  # input time taken for system to stabilise in seconds
     hold_end = 10  # input time desired to hold optimal parameters immediately before termination in seconds
 
