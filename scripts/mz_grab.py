@@ -47,7 +47,7 @@ def mz_grab(ranges, scan_time, param_change_delay=None, stabil_delay=None, names
 
     all_spec = []
     for i in range(len(ranges)):
-        # func.copy_sic(ranges[i], chrom_coord, clicks1, ['tab'], [(70, 50)], time_delay)  # Input chromatogram bounds
+        func.copy_sic(ranges[i], chrom_coord, clicks1, ['tab'], [(70, 50)], time_delay)  # Input chromatogram bounds
         # func.avg_sic(chrom_coord, spec_coord, range_coord, [(90, 50)])  # Get average of chromatogram region and copy spec
         spec = pd.read_clipboard(header=None)
         spec.columns=['m/z', names[i]]  # Make DataFrame from spec
