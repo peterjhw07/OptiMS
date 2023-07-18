@@ -1,3 +1,5 @@
+"""General OptiMS functions"""
+
 import pyautogui as pg
 pg.FAILSAFE = True
 import time
@@ -117,11 +119,11 @@ def plot_data(df, x_header, y_headers, x_label, y_label, output_file, legend=Tru
     return
 
 
-def save_excel(df, sheet_names, output_file):
+def export_excel(df, output_file, sheet_names, mode='w', if_sheet_exists=None):
     data_store_try = False
     while data_store_try is False:
         try:
-            writer = pd.ExcelWriter(output_file + '.xlsx', engine='openpyxl')
+            writer = pd.ExcelWriter(output_file, engine='openpyxl', mode=mode, if_sheet_exists=if_sheet_exists)
             for i in range(len(df)):
                 df[i].to_excel(writer, sheet_name=sheet_names[i], index=None)
             writer.save()
