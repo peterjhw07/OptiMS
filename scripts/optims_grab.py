@@ -97,12 +97,12 @@ def all_chrom_grab(ranges, names=None, other_coord_num=0, software=None, learn_c
     return df
 
 
-def get_all_avg_chrom(output_df, chrom_df, param_change_delay, stabil_delay):
+def get_all_avg_chrom(output_df, chrom_df, param_change_delay, stabil_delay, scan_num):
         df = output_df
         for i in range(len(df)):
             avg, error, error_perc = [], [], []
             for j in range(1, chrom_df.shape[1]):
-                chrom_df_loc = chrom_df.loc[(chrom_df['Time'] >= (df.iloc[i, df.columns.get_loc('Chrom time')] + (stabil_delay / 60))) & (chrom_df['Time'] <= (df.iloc[i, df.columns.get_loc('Chrom time')] + (param_change_delay / 60)))]
+                chrom_df_loc = chrom_df.loc[(chrom_df['Time'] >= (df.loc[i, 'Chrom time'] + (stabil_delay / 60)))][0:scan_num]
                 avg.append(chrom_df_loc[chrom_df.columns[j]].mean())
                 error.append(chrom_df_loc[chrom_df.columns[j]].std() / (len(chrom_df_loc[chrom_df.columns[j]]) ** 0.5))
                 error_perc.append((error[-1] / avg[-1]) * 100)
@@ -110,12 +110,12 @@ def get_all_avg_chrom(output_df, chrom_df, param_change_delay, stabil_delay):
         return df
 
 
-def optims_grab(import_file, ranges, param_change_delay, stabil_delay, import_sheet_name='Output', names=None,
+def optims_grab(import_file, ranges, param_change_delay, stabil_delay, scan_num, import_sheet_name='Output', names=None,
                 other_coord_num=0, software=None, learn_coord=True, time_delay=0):
     chrom_df = all_chrom_grab(ranges, names=names, other_coord_num=other_coord_num, software=software,
                               learn_coord=learn_coord, time_delay=time_delay)
     import_df = pd.read_excel(import_file, sheet_name=import_sheet_name)
-    output_df = get_all_avg_chrom(import_df, chrom_df, param_change_delay, stabil_delay)
+    output_df = get_all_avg_chrom(import_df, chrom_df, param_change_delay, stabil_delay, scan_num)
     return output_df
 
 
@@ -125,13 +125,14 @@ def optims_grab_process(export_df, import_file, import_sheet_name='Output'):
 
 if __name__ == "__main__":
     # Input import file/folder locations
-    import_file = r'C:\Users\Peter\Documents\Postdoctorate\Work\CBD to THC\Tandem MS\PJHW23022301_CBD_100UM_TRANSCE_0-30V_MS_opti_output - optims_grab_test.xlsx'  # Input filename of previous OptiMS output file, including extension, eg: import_file = r'C:\Users\IanC\Documents\Experiments\Exp_optims_output.xlsx'
+    import_file = r'C:\Users\Waters\Documents\OptiMS\OptiMS_test_optims_output.xlsx'  # Input filename of previous OptiMS output file, including extension, eg: import_file = r'C:\Users\IanC\Documents\Experiments\Exp_optims_output.xlsx'
 
     # Input species for export
     ranges = 2  # Input int number of chromatograms (e.g. 3) or list of int or tuples (e.g. [922.8727, (923.8727, 924.8776)]
     names = []  # Insert desired names for regions as list, e.g. ['Region 1', 'Region 2', ...] or leave empty for automated naming, i.e. [].
 
     # Input system times
+    scan_num = 8
     param_change_delay = 10  # input delay between change of parameters in seconds
     stabil_delay = 2  # input time taken for system to stabilise in seconds
     hold_end = 10  # input time desired to hold optimal parameters immediately before termination in seconds
@@ -143,7 +144,7 @@ if __name__ == "__main__":
 
     time_delay = 0  # Insert a time delay between operations if MassLynx is running slow in format
 
-    output_df = optims_grab(import_file, ranges, param_change_delay, stabil_delay,
+    output_df = optims_grab(import_file, ranges, param_change_delay, stabil_delay, scan_num,
                             names=names, other_coord_num=other_coord_num, software=software, learn_coord=learn_coord,
                             time_delay=time_delay)
     optims_grab_process(output_df, import_file)

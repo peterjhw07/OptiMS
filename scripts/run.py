@@ -4,14 +4,14 @@ import time
 # Input output file/folder locations
 software = 'MassLynx'
 pic_folder = r''  # input folder location for saving pictures as r'folder_location\folder_name' if desired - else put False or r''
-output_file = r'C:\Users\Peter\Documents\Postdoctorate\Work\OptiMS'  # input location of optimisation file output as r'file_location\name' - do not include file extension, e.g. C:\Users\Waters\Documents\OptiMS\MS_opti_output.
+output_file = r'C:\Users\Waters\Documents\OptiMS\OptiMS_test'  # input location of optimisation file output as r'file_location\name' - do not include file extension, e.g. C:\Users\Waters\Documents\OptiMS\MS_opti_output.
 
 # Input system times
 scan_time = 1  # input acquisition time for each spectrum
 scan_num = 8  # input number of spectrum scans required for each parameter configuration
 param_change_delay = 5  # input delay between change of parameters in seconds (req. for run_optims and mz_grab only)
 stabil_delay = 2  # input time taken for system to stabilise in seconds (req. for run_optims and mz_grab only)
-hold_end = 60  # input time desired to hold optimal parameters immediately before termination in seconds (req. for run_optims only)
+hold_end = 32  # input time desired to hold optimal parameters immediately before termination in seconds (req. for run_optims only)
 time_delay = 0  # Insert a time delay between operations if MassLynx is running slow in format (req. for chrom_grab and mz_grab only)
 
 # Input run_optims parameters
@@ -21,8 +21,8 @@ get_optims = True
 method_type = 'hone'  # input method type: 'defined' for chosen parameter values; 'exhaust' for exhaustive; 'random' for random combination from exhaustive; 'simple' for simple; 'hone' for honing; 'recover' to export last data set
 method_metric = 'max_2'  # input metric defition: 'max' for maximising intensity of first chromatogram; 'ratio' for maximising intensity of first chromatogram to second; 'user def' to define own metric (below)
 method_break = 0  # input a factor for which the method will break and move onto the next parameter, if the new metric falls below method_break * previous (simple only).
-n_random_points = 60  # input number of random combinations of parameters to guess, must be >0 (random and hone only).
-n_honing_points = 60  # input number of subsequent honing points required, must be >0 (hone only).
+n_random_points = 5  # input number of random combinations of parameters to guess, must be >0 (random and hone only).
+n_honing_points = 5  # input number of subsequent honing points required, must be >0 (hone only).
 
 # Input parameter details, including bounds
 tab_names = ['ES', 'Instrument']  # input names of param_in_tab in form ['Tab 1', ..., 'Tab X'] or None or [] if only tab used.
@@ -33,7 +33,7 @@ param_bounds = [(0, 5, 1), (2.5, 6, 0.5), (0, 10, 1)]  # input parameters bounds
 param_in_tab = [1, 1, 2]  # enter param_in_tab required for each parameter in form [1, ..., X] or None or [] if all parameters in Tab 1.
 chrom_num = 2  # enter number of chromatograms in use. Input 0 if chromatograms cannot be copied. Else input integer > 0.
 
-learn_coord = False  # input True if wanting to learn coordinates of required param_in_tab/boxes/chromatograms, else False.
+learn_coord = True  # input True if wanting to learn coordinates of required param_in_tab/boxes/chromatograms, else False.
 
 # Define optims_grab parameters
 get_optims_grab = False  # Set true if wanting to grab optims output for other species, else False

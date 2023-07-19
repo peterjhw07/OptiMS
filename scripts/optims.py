@@ -232,6 +232,7 @@ def run_optims(scan_time, scan_num, param_names, default_params=None, param_boun
             df = get_chrom(chrom_coord[i], other_coord)
             df_loc = df.loc[df['Time'] >= (chrom_start_time + stabil_delay)][0:scan_num]
             while len(df_loc) < scan_num:
+                print(len(df_loc))
                 time.sleep(5)
                 df = get_chrom(chrom_coord[i], other_coord)
                 df_loc = df.loc[df['Time'] >= (chrom_start_time + stabil_delay)][0:scan_num]
@@ -246,7 +247,7 @@ def run_optims(scan_time, scan_num, param_names, default_params=None, param_boun
             chrom_start_time = get_chrom_curr_time(chrom_coord, other_coord)
             # chrom_start_time = (datetime.now().timestamp() - exp_start_time)*10  # Use for testing purposes
             #time.sleep(param_change_delay)
-            time.sleep(scan_time * (scan_num - 1))
+            time.sleep(stabil_delay + scan_time * (scan_num + 1))
             snip_screen(chrom_start_time, snip_screen_coord)
             chrom_avg, chrom_error, chrom_error_perc = get_avg_chrom(chrom_coord, other_coord, param_change_delay,
                                                                      stabil_delay, chrom_start_time, scan_num)
@@ -394,6 +395,8 @@ def run_optims(scan_time, scan_num, param_names, default_params=None, param_boun
         param_store_df = pd.concat([param_store_df, pd.DataFrame({'Parameter': ['param_combi'],
                                                                   'Values': [param_combi]})], ignore_index=True)
 
+    param_store_df.to_pickle(param_store_filename)
+
     if any(i in method_type for i in ('exhaust', 'random', 'defined')):
         if isinstance(param_change_delay, (int, float)):
             param_change_delay = [param_change_delay] * len(param_combi)
@@ -466,7 +469,7 @@ def run_optims(scan_time, scan_num, param_names, default_params=None, param_boun
 
     if any(i in method_type for i in ('defined', 'exhaust', 'random', 'simple', 'hone')):
         opti_store_df = end_hold(opti_store_df, data_store_filename, headers, exp_start_time, opti_param, chrom_coord,
-                                 other_coord, snip_screen_coord, hold_end, stabil_delay, scan_time, scan_num)
+                                 other_coord, snip_screen_coord, param_change_delay, stabil_delay, scan_time, hold_end)
         stop_aq(stop_coord, other_coord)
 
     if 'recover' in method_type:
