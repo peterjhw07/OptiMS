@@ -7,18 +7,19 @@ pic_folder = r''  # input folder location for saving pictures as r'folder_locati
 output_file = r'C:\Users\Peter\Documents\Postdoctorate\Work\OptiMS'  # input location of optimisation file output as r'file_location\name' - do not include file extension, e.g. C:\Users\Waters\Documents\OptiMS\MS_opti_output.
 
 # Input system times
-scan_time = 1  # Experimental scan time (req. for mz_grab only)
-param_change_delay = 10  # input delay between change of parameters in seconds (req. for run_optims and mz_grab only)
+scan_time = 1  # input acquisition time for each spectrum
+scan_num = 8  # input number of spectrum scans required for each parameter configuration
+param_change_delay = 5  # input delay between change of parameters in seconds (req. for run_optims and mz_grab only)
 stabil_delay = 2  # input time taken for system to stabilise in seconds (req. for run_optims and mz_grab only)
 hold_end = 60  # input time desired to hold optimal parameters immediately before termination in seconds (req. for run_optims only)
 time_delay = 0  # Insert a time delay between operations if MassLynx is running slow in format (req. for chrom_grab and mz_grab only)
 
 # Input run_optims parameters
-get_optims = False
+get_optims = True
 
 # Input optimisation method details
-method_type = 'random'  # input method type: 'defined' for chosen parameter values; 'exhaust' for exhaustive; 'random' for random combination from exhaustive; 'simple' for simple; 'hone' for honing; 'recover' to export last data set
-method_metric = 'user def'  # input metric defition: 'max' for maximising intensity of first chromatogram; 'ratio' for maximising intensity of first chromatogram to second; 'user def' to define own metric (below)
+method_type = 'hone'  # input method type: 'defined' for chosen parameter values; 'exhaust' for exhaustive; 'random' for random combination from exhaustive; 'simple' for simple; 'hone' for honing; 'recover' to export last data set
+method_metric = 'max_2'  # input metric defition: 'max' for maximising intensity of first chromatogram; 'ratio' for maximising intensity of first chromatogram to second; 'user def' to define own metric (below)
 method_break = 0  # input a factor for which the method will break and move onto the next parameter, if the new metric falls below method_break * previous (simple only).
 n_random_points = 60  # input number of random combinations of parameters to guess, must be >0 (random and hone only).
 n_honing_points = 60  # input number of subsequent honing points required, must be >0 (hone only).
@@ -27,10 +28,10 @@ n_honing_points = 60  # input number of subsequent honing points required, must 
 tab_names = ['ES', 'Instrument']  # input names of param_in_tab in form ['Tab 1', ..., 'Tab X'] or None or [] if only tab used.
 tab_rows = []  # input row of each tab in form [1, ..., 2] or None or [] if all param_in_tab on same row. Only two rows are currently supported.
 param_names = ['Capillary', 'Nebuliser', 'TrapCE']  # input names of parameters in form ['Param 1, ..., Param X']
-default_params = [3, 0, 50, 3, 5, 0]  # input default start values in the form [0, ..., 0].
+default_params = [3, 4, 5]  # input default start values in the form [0, ..., 0].
 param_bounds = [(0, 5, 1), (2.5, 6, 0.5), (0, 10, 1)]  # input parameters bounds (lower bound, upper bound, increment value) in form e.g. [(X1, X2, X3), ..., (Y1, Y2, Y3)].
 param_in_tab = [1, 1, 2]  # enter param_in_tab required for each parameter in form [1, ..., X] or None or [] if all parameters in Tab 1.
-chrom_num = 0  # enter number of chromatograms in use. Input 0 if chromatograms cannot be copied. Else input integer > 0.
+chrom_num = 2  # enter number of chromatograms in use. Input 0 if chromatograms cannot be copied. Else input integer > 0.
 
 learn_coord = False  # input True if wanting to learn coordinates of required param_in_tab/boxes/chromatograms, else False.
 
@@ -41,7 +42,7 @@ optims_ranges = 2  # Input int number of chromatograms (e.g. 3) or list of int o
 optims_names = []  # Insert desired names for regions as list, e.g. ['Region 1', 'Region 2', ...] or leave empty for automated naming, i.e. [].
 
 # Define chrom_grab parameters
-get_chrom_grab = True  # Set true if wanting to grab multiple chromatograms, else False
+get_chrom_grab = False  # Set true if wanting to grab multiple chromatograms, else False
 chrom_ranges = [922.8727, (924.8776, 925.8742), 926.8714, 927.8824, (928.8806, 929.8660)]  # Input list of mz values for extraction of chromatograms, where mz values are int (peak close to value) or tuple (range). E.g. [922.8727, (923.8727, 924.8776)]
 chrom_names = []  # Insert desired names for regions as list, e.g. ['Region 1', 'Region 2', ...] or leave empty for automated naming, i.e. [].
 
@@ -72,13 +73,13 @@ chrom_names = []  # Insert desired names for regions as list, e.g. ['Region 1', 
 # chrom_ranges = [922.8727, 924.8776, 925.8742, 926.8714, 927.8824, 928.8806, 929.8660, 930.8654, 931.8652, 932.8655, 933.8665]  # TF_01-191 (PdL2IPh)-926
 
 # Define mz_grab parameters
-get_mz_grab = True  # Set true if wanting to grab average mass spectra for certain chromatogram regions, else False
+get_mz_grab = False  # Set true if wanting to grab average mass spectra for certain chromatogram regions, else False
 # mz_ranges = 'output_file'  # [(0, 0.1), (0.2, 0.5), (1, 1.5)]
 mz_ranges = r'C:\Users\Peter\Documents\Postdoctorate\Work\CBD to THC\Tandem MS\PJHW23022308_D9-THC_50UM_D8-THC_50UM_TRAPCE_0-30V_MS_opti_output.xlsx'  # Input list of tuples for ranges for averaging or OptiMS output filename in form r'filename' or just 'output_file', using the filename from above
 mz_names = [str(i) + 'V' for i in range(32)]  # Insert desired names for regions as list, e.g. ['Region 1', 'Region 2', ...] or leave empty for automated naming, i.e. [].
 
 if get_optims is True:
-    opti_param, opti_store_df = OptiMS.run_optims(param_names, default_params, param_bounds, tab_names=tab_names,
+    opti_param, opti_store_df = OptiMS.run_optims(scan_time, scan_num, param_names, default_params, param_bounds, tab_names=tab_names,
                                            tab_rows=tab_rows, param_in_tab=param_in_tab, method_type=method_type,
                                            method_metric=method_metric, break_fac=method_break, chrom_num=chrom_num,
                                            param_change_delay=param_change_delay, stabil_delay=stabil_delay,
