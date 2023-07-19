@@ -232,7 +232,6 @@ def run_optims(scan_time, scan_num, param_names, default_params=None, param_boun
             df = get_chrom(chrom_coord[i], other_coord)
             df_loc = df.loc[df['Time'] >= (chrom_start_time + stabil_delay)][0:scan_num]
             while len(df_loc) < scan_num:
-                print(len(df_loc))
                 time.sleep(5)
                 df = get_chrom(chrom_coord[i], other_coord)
                 df_loc = df.loc[df['Time'] >= (chrom_start_time + stabil_delay)][0:scan_num]
@@ -265,7 +264,7 @@ def run_optims(scan_time, scan_num, param_names, default_params=None, param_boun
             # time.sleep(max(0, param_change_delay - (
             # (datetime.now().timestamp() - exp_start_time) - (opti_store_df.shape[0] * param_change_delay))))
             # time.sleep(param_change_delay)
-            time.sleep(scan_time * (scan_num - 1))
+            time.sleep(scan_time * (scan_num + 1))
             snip_screen(chrom_start_time, snip_screen_coord)
             opti_store_df = pd.concat([opti_store_df, pd.DataFrame(
                 np.array([[chrom_start_time, *params]]), columns=headers)], ignore_index=True)
