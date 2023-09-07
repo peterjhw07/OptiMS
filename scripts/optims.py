@@ -39,7 +39,7 @@ def other_error():
 
 
 # Main OptiMS program
-def run_optims(param_names, default_params=None, param_bounds=None, tab_names=None, tab_rows=None, param_in_tab=None,
+def run_optims(scan_time, scan_num, param_names, default_params=None, param_bounds=None, tab_names=None, tab_rows=None, param_in_tab=None,
                method_type='hone', method_metric='max', break_fac=0, chrom_num=1, other_coord_num=0,
                param_change_delay=10, stabil_delay=2, hold_end=10, n_random_points=60, n_honing_points=60,
                software=None, learn_coord=True, pic_folder=None, output_file=None, get_csv=False, get_Excel=False):
@@ -147,7 +147,7 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
         return
 
     def simple(headers, tab_coord, tab_rows, data_store_filename, param_names, exp_start_time, chrom_coord, other_coord,
-               snip_screen_coord, bounds, coord, start_param, param_name, param_change_delay, stabil_delay, break_fac):
+               snip_screen_coord, bounds, coord, start_param, param_name, param_change_delay, stabil_delay, break_fac, scan_time, scan_num):
         opti_store_df = pd.read_pickle(data_store_filename)
         cycle_start = get_chrom_curr_time(chrom_coord, other_coord)  # Records time of start of parameter cycle
         left_click_tab(tab_coord, tab_rows)
@@ -157,7 +157,7 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
             func.left_click_enter_param(coord, i)
             opti_store_df, metric_recent = sleep_avg_store(opti_store_df, data_store_filename, headers, exp_start_time,
                                                            start_param, chrom_coord, other_coord, snip_screen_coord,
-                                                           param_change_delay, stabil_delay)
+                                                           param_change_delay, stabil_delay, scan_time, scan_num)
             if metric_recent < break_fac * metric_prev:
                 break
             metric_prev = metric_recent
@@ -167,7 +167,7 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
         return opti_param
 
     def hone(params, hone_factors, data_store_filename, param_names, exp_start_time, tab_coord, param_in_tab, tab_rows,
-             param_coord, chrom_coord, other_coord, snip_screen_coord, param_change_delay, stabil_delay, headers):
+             param_coord, chrom_coord, other_coord, snip_screen_coord, param_change_delay, stabil_delay, headers, scan_time, scan_num):
         params_refac = [i * j for i, j in zip(params, hone_factors)]
         opti_store_df = pd.read_pickle(data_store_filename)
         if opti_store_df.shape[0] == 0 or not (opti_store_df[param_names].iloc[-1:] == np.array(params_refac)).all(
@@ -175,7 +175,7 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
             change_all_params(param_names, tab_coord, param_in_tab, tab_rows, param_coord, params_refac)
             opti_store_df, metric_recent = sleep_avg_store(opti_store_df, data_store_filename, headers, exp_start_time,
                                                            params_refac, chrom_coord, other_coord, snip_screen_coord,
-                                                           param_change_delay, stabil_delay)
+                                                           param_change_delay, stabil_delay, scan_time, scan_num)
         else:
             found_row = opti_store_df[
                 (opti_store_df.loc[:, param_names] == np.array(params_refac)).all(1)].index.tolist()
@@ -183,10 +183,10 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
         return -metric_recent
 
     def end_hold(opti_store_df, data_store_filename, headers, exp_start_time, start_param, chrom_coord, other_coord,
-                 snip_screen_coord, param_change_delay, stabil_delay):
+                 snip_screen_coord, param_change_delay, stabil_delay, scan_time, scan_num):
         opti_store_df, metric_recent = sleep_avg_store(opti_store_df, data_store_filename, headers, exp_start_time,
                                                        start_param, chrom_coord, other_coord, snip_screen_coord,
-                                                       param_change_delay, stabil_delay)
+                                                       param_change_delay, stabil_delay, scan_time, scan_num)
         return opti_store_df
 
     if 'MassLynx' in software:
@@ -223,13 +223,18 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
         def get_metric(avg_data):
             return custom_metric(avg_data)
 
-    def get_avg_chrom(chrom_coord, other_coord, param_change_delay, stabil_delay):
+    def get_avg_chrom(chrom_coord, other_coord, param_change_delay, stabil_delay, chrom_start_time, scan_num):
         avg, error, error_perc = [], [], []
-        curr_time = get_chrom_curr_time(chrom_coord, other_coord)
         for i in range(len(chrom_coord)):
+            #df = get_chrom(chrom_coord[i], other_coord)
+            #df_loc = df.loc[(df['Time'] >= (chrom_start_time + stabil_delay)) &
+            #                (df['Time'] <= (chrom_start_time + (param_change_delay / 60)))]
             df = get_chrom(chrom_coord[i], other_coord)
-            df_loc = df.loc[(df['Time'] <= curr_time) &
-                            (df['Time'] >= (curr_time - (param_change_delay / 60) + stabil_delay))]
+            df_loc = df.loc[df['Time'] >= (chrom_start_time + stabil_delay)][0:scan_num]
+            while len(df_loc) < scan_num:
+                time.sleep(5)
+                df = get_chrom(chrom_coord[i], other_coord)
+                df_loc = df.loc[df['Time'] >= (chrom_start_time + stabil_delay)][0:scan_num]
             avg.append(df_loc['Intensity'].mean())
             error.append(df_loc['Intensity'].std() / (len(df_loc['Intensity']) ** 0.5))
             error_perc.append((error[-1] / avg[-1]) * 100)
@@ -237,26 +242,29 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
 
     if chrom_num != 0 and software:
         def sleep_avg_store(opti_store_df, data_store_filename, headers, exp_start_time, params, chrom_coord,
-                            other_coord, snip_screen_coord, param_change_delay, stabil_delay):
+                            other_coord, snip_screen_coord, param_change_delay, stabil_delay, scan_time, scan_num):
             chrom_start_time = get_chrom_curr_time(chrom_coord, other_coord)
-            time.sleep(param_change_delay)
+            # chrom_start_time = (datetime.now().timestamp() - exp_start_time)*10  # Use for testing purposes
+            #time.sleep(param_change_delay)
+            time.sleep(stabil_delay + scan_time * (scan_num + 1))
             snip_screen(chrom_start_time, snip_screen_coord)
             chrom_avg, chrom_error, chrom_error_perc = get_avg_chrom(chrom_coord, other_coord, param_change_delay,
-                                                                     stabil_delay)
+                                                                     stabil_delay, chrom_start_time, scan_num)
             metric_recent = get_metric(chrom_avg)
             opti_store_df = pd.concat([opti_store_df, pd.DataFrame(
                 np.array([[chrom_start_time, *params, chrom_avg, chrom_error, chrom_error_perc,
-                           metric_recent]]), columns=headers)], ignore_index=True)
+                           metric_recent]], dtype=object), columns=headers)], ignore_index=True)
             opti_store_df.to_pickle(data_store_filename)
             print(opti_store_df)
             return opti_store_df, metric_recent
     else:
         def sleep_avg_store(opti_store_df, data_store_filename, headers, exp_start_time, params, chrom_coord,
-                            other_coord, snip_screen_coord, param_change_delay, stabil_delay):
-            chrom_start_time = datetime.now().timestamp()  # - exp_start_time
+                            other_coord, snip_screen_coord, param_change_delay, stabil_delay, scan_time, scan_num):
+            chrom_start_time = datetime.now().timestamp() - exp_start_time
             # time.sleep(max(0, param_change_delay - (
             # (datetime.now().timestamp() - exp_start_time) - (opti_store_df.shape[0] * param_change_delay))))
-            time.sleep(param_change_delay)
+            # time.sleep(param_change_delay)
+            time.sleep(scan_time * (scan_num + 1))
             snip_screen(chrom_start_time, snip_screen_coord)
             opti_store_df = pd.concat([opti_store_df, pd.DataFrame(
                 np.array([[chrom_start_time, *params]]), columns=headers)], ignore_index=True)
@@ -297,8 +305,7 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
         sys.exit()
 
     if learn_coord:
-        tab_coord, param_coord, chrom_coord, other_coord, snip_screen_coord = [], [], [], [], []  # is this needed?
-
+        snip_screen_coord = []
         tab_coord = [func.coord_find(i + ' tab') for i in tab_names]
         param_coord = [func.coord_find(i + ' box') for i in param_names]
         chrom_coord = [func.coord_find('chromatogram ' + str(i + 1)) for i in range(chrom_num)]
@@ -330,7 +337,7 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
     else:
         tab_rows = [1] * len(tab_names)
 
-    if not 'defined' in method_type and not len(param_names) == len(default_params) == len(param_bounds) == len(param_in_tab):
+    if not 'defined' in method_type and not 'recover' in method_type and not len(param_names) == len(default_params) == len(param_bounds) == len(param_in_tab):
         print('Error! Mismatch between number of param_names, default_params, param_bounds and param_in_tab.')
         sys.exit(1)
 
@@ -387,6 +394,8 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
         param_store_df = pd.concat([param_store_df, pd.DataFrame({'Parameter': ['param_combi'],
                                                                   'Values': [param_combi]})], ignore_index=True)
 
+    param_store_df.to_pickle(param_store_filename)
+
     if any(i in method_type for i in ('exhaust', 'random', 'defined')):
         if isinstance(param_change_delay, (int, float)):
             param_change_delay = [param_change_delay] * len(param_combi)
@@ -398,7 +407,7 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
                 change_all_params(param_names, tab_coord, param_in_tab, tab_rows, param_coord, param_combi[i])
                 opti_store_df, metric_recent = sleep_avg_store(opti_store_df, data_store_filename, headers,
                                                                exp_start_time, param_combi[i], chrom_coord, other_coord,
-                                                               snip_screen_coord, param_change_delay[i], stabil_delay)
+                                                               snip_screen_coord, param_change_delay[i], stabil_delay, scan_time, scan_num)
         except IndexError:
             chrom_copy_error()
         except Exception:
@@ -420,7 +429,7 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
                 start_param = simple(headers, tab_coord[param_in_tab[i]], tab_rows[param_in_tab[i]],
                                      data_store_filename, param_names, exp_start_time, chrom_coord, other_coord,
                                      snip_screen_coord, param_bounds[i], param_coord[i], start_param, param_names[i],
-                                     param_change_delay, stabil_delay, break_fac)
+                                     param_change_delay, stabil_delay, break_fac, scan_time, scan_num)
         except IndexError:
             chrom_copy_error()
         except Exception:
@@ -445,7 +454,7 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
             hone_factors.append(param_bounds[i][2])
         lam_hone = lambda param_tup: hone(param_tup, hone_factors, data_store_filename, param_names, exp_start_time,
                                           tab_coord, param_in_tab, tab_rows, param_coord, chrom_coord, other_coord,
-                                          snip_screen_coord, param_change_delay, stabil_delay, headers)
+                                          snip_screen_coord, param_change_delay, stabil_delay, headers, scan_time, scan_num)
         try:
             res_gp = gp_minimize(lam_hone, hone_ranges, x0=hone_defaults, n_initial_points=n_random_points,
                                  n_calls=n_random_points + max(0, n_honing_points))
@@ -459,7 +468,7 @@ def run_optims(param_names, default_params=None, param_bounds=None, tab_names=No
 
     if any(i in method_type for i in ('defined', 'exhaust', 'random', 'simple', 'hone')):
         opti_store_df = end_hold(opti_store_df, data_store_filename, headers, exp_start_time, opti_param, chrom_coord,
-                                 other_coord, snip_screen_coord, hold_end, stabil_delay)
+                                 other_coord, snip_screen_coord, param_change_delay, stabil_delay, scan_time, hold_end)
         stop_aq(stop_coord, other_coord)
 
     if 'recover' in method_type:
@@ -506,7 +515,7 @@ if __name__ == "__main__":
     tab_rows = []  # input row of each tab in form [1, ..., 2] or None or [] if all param_in_tab on same row. Only two rows are currently supported.
     param_names = ['Capillary', 'Sampling Cone', 'Source Offset', 'Nebuliser', 'TrapCE', 'TransCE']  # input names of parameters in form ['Param 1, ..., Param X']
     default_params = [3, 0, 50, 3, 5, 0]  # input default start values in the form [0, ..., 0].
-    param_bounds = [(0, 5, 1), (0, 100, 10), (0, 100, 10), (2.5, 6, 0.5), (0, 10, 1), (0, 10, 1)]  # input parameters bounds (lower bound, upper bound, increment value) in form e.g. [(X1, X2, X3), ..., (Y1, Y2, Y3)] (all methods except defined) or input params in form [(param 1 value 1, param 2 value 1, ...), (param 1 value 2, param 2 value 2, ...), ...] or location of previously saved parameter details (defined only).
+    param_bounds = [(0, 5, 1), (0, 100, 10), (0, 100, 10), (2.5, 6, 0.5), (0, 10, 1), (0, 10, 1)]  # input parameFters bounds (lower bound, upper bound, increment value) in form e.g. [(X1, X2, X3), ..., (Y1, Y2, Y3)] (all methods except defined) or input params in form [(param 1 value 1, param 2 value 1, ...), (param 1 value 2, param 2 value 2, ...), ...] or location of previously saved parameter details (defined only).
     param_in_tab = []  # enter param_in_tab required for each parameter in form [1, ..., X] or None or [] if all parameters in Tab 1.
     chrom_num = 0  # enter number of chromatograms in use. Input 0 if chromatograms cannot be copied. Else input integer > 0.
     other_coord_num = 1
@@ -517,13 +526,15 @@ if __name__ == "__main__":
     param_change_delay = 10  # input delay between change of parameters in seconds
     stabil_delay = 2  # input time taken for system to stabilise in seconds
     hold_end = 10  # input time desired to hold optimal parameters immediately before termination in seconds
+    scan_time = 1  # input acquisition time for each spectrum
+    scan_num = 8  # input number of spectrum scans required for each parameter configuration
 
     # Input output file/folder locations
     software = 'custom'  # input software in use. Currently accepted softwares are MassLynx (Waters), Xcalibur (Thermo) and custom (define above)
     pic_folder = r''  # input folder location for saving pictures as r'folder_location\folder_name' if desired - else put False or r''
     output_file = r'C:\Users\Waters\Documents\OptiMS\Exp'  # input location of optimisation file output as r'file_location\name' - do not include file extension, e.g. C:\Users\Waters\Documents\OptiMS\Exp.
 
-    opti_param, opti_store_df = run_optims(param_names, default_params=default_params, param_bounds=param_bounds,
+    opti_param, opti_store_df = run_optims(scan_time, scan_num, param_names, default_params=default_params, param_bounds=param_bounds,
                                            tab_names=tab_names, tab_rows=tab_rows, param_in_tab=param_in_tab,
                                            method_type=method_type, method_metric=method_metric, break_fac=method_break,
                                            chrom_num=chrom_num, other_coord_num=other_coord_num,
