@@ -44,12 +44,12 @@ def chrom_grab(ranges, names=None, time_delay=0):
 
     chrom_coord = func.get_pic_loc('Chromatogram.png', '\'Chromatogram\' Chromatogram window title')  # Get location of chromatogram window
 
-    # func.copy_sic([], chrom_coord, [], '_', [(70, 50)], time_delay)  # Select chromatogram region - turn off when testing offline
+    func.copy_sic([], chrom_coord, [], '_', [(70, 50)], time_delay)  # Select chromatogram region - turn off when testing offline
     tic_df = pd.read_clipboard(header=None)
     raw_df = pd.DataFrame(index=range(tic_df.shape[0]), columns=['Time', 'TIC', *names])
     raw_df.loc[:, 'Time'], raw_df.loc[:, 'TIC'] = tic_df.iloc[:, 0], tic_df.iloc[:, 1]
     for i in range(len(ranges)):  # Specifying that for every instance in species, run copy_sic, insert_sic and norm_sic
-        # func.copy_sic(ranges[i], chrom_coord, clicks1, '_', [(70, 50)], time_delay)  # Select chromatogram region - turn off when testing offline
+        func.copy_sic(ranges[i], chrom_coord, clicks1, '_', [(70, 50)], time_delay)  # Select chromatogram region - turn off when testing offline
         pg.typewrite(['delete', 'enter'])
         data = pd.read_clipboard(header=None)  # Make a new temporary dataframe of new species data. header=None so 1st row is copied, and not excluded as a label
         raw_df.loc[:, names[i]] = data.iloc[:, 1]  # Convert sum intensity to average intensity

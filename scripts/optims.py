@@ -337,7 +337,7 @@ def run_optims(scan_time, scan_num, param_names, default_params=None, param_boun
     else:
         tab_rows = [1] * len(tab_names)
 
-    if not 'defined' in method_type and not len(param_names) == len(default_params) == len(param_bounds) == len(param_in_tab):
+    if not 'defined' in method_type and not 'recover' in method_type and not len(param_names) == len(default_params) == len(param_bounds) == len(param_in_tab):
         print('Error! Mismatch between number of param_names, default_params, param_bounds and param_in_tab.')
         sys.exit(1)
 
@@ -515,7 +515,7 @@ if __name__ == "__main__":
     tab_rows = []  # input row of each tab in form [1, ..., 2] or None or [] if all param_in_tab on same row. Only two rows are currently supported.
     param_names = ['Capillary', 'Sampling Cone', 'Source Offset', 'Nebuliser', 'TrapCE', 'TransCE']  # input names of parameters in form ['Param 1, ..., Param X']
     default_params = [3, 0, 50, 3, 5, 0]  # input default start values in the form [0, ..., 0].
-    param_bounds = [(0, 5, 1), (0, 100, 10), (0, 100, 10), (2.5, 6, 0.5), (0, 10, 1), (0, 10, 1)]  # input parameters bounds (lower bound, upper bound, increment value) in form e.g. [(X1, X2, X3), ..., (Y1, Y2, Y3)] (all methods except defined) or input params in form [(param 1 value 1, param 2 value 1, ...), (param 1 value 2, param 2 value 2, ...), ...] or location of previously saved parameter details (defined only).
+    param_bounds = [(0, 5, 1), (0, 100, 10), (0, 100, 10), (2.5, 6, 0.5), (0, 10, 1), (0, 10, 1)]  # input parameFters bounds (lower bound, upper bound, increment value) in form e.g. [(X1, X2, X3), ..., (Y1, Y2, Y3)] (all methods except defined) or input params in form [(param 1 value 1, param 2 value 1, ...), (param 1 value 2, param 2 value 2, ...), ...] or location of previously saved parameter details (defined only).
     param_in_tab = []  # enter param_in_tab required for each parameter in form [1, ..., X] or None or [] if all parameters in Tab 1.
     chrom_num = 0  # enter number of chromatograms in use. Input 0 if chromatograms cannot be copied. Else input integer > 0.
     other_coord_num = 1
