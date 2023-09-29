@@ -181,7 +181,6 @@ def run_optims(param_names, param_bounds, default_params=None, tab_names=None, t
              headers, exp_start_time, chrom_coord, other_coord, snip_screen_coord, stabil_delay, scan_time, scan_num):
         params_refac = [i * j for i, j in zip(params, hone_factors)]
         opti_store_df = pd.read_pickle(data_store_filename)
-        print(stabil_delay)
         if opti_store_df.shape[0] == 0 or not (opti_store_df[param_names].iloc[-1:] == np.array(params_refac)).all(
                 1).any():
             change_all_params(param_names, tab_coord, param_in_tab, tab_rows, param_coord, params_refac)
@@ -259,7 +258,7 @@ def run_optims(param_names, param_bounds, default_params=None, tab_names=None, t
         def sleep_avg_store(opti_store_df, data_store_filename, headers, exp_start_time, params, chrom_coord,
                             other_coord, snip_screen_coord, stabil_delay, scan_time, scan_num):
             chrom_start_time = get_chrom_curr_time(chrom_coord, other_coord)
-            chrom_start_time = (datetime.now().timestamp() - exp_start_time)  # Use for testing purposes
+            # chrom_start_time = (datetime.now().timestamp() - exp_start_time)  # Use for testing purposes
             time.sleep(stabil_delay * 60 + scan_time * scan_num)
             chrom_avg, chrom_error, chrom_error_perc = get_avg_chrom(chrom_coord, other_coord, chrom_start_time,
                                                                      stabil_delay, scan_time, scan_num)
