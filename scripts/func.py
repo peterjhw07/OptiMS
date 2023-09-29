@@ -93,15 +93,21 @@ def avg_sic(chrom_coord, spec_coord, range_coord, clicks2, time_delay=5):
         pg.typewrite(['delete', 'enter'])
 
 
-def get_range(i, param_change_delay=None, stabil_delay=None):
+def get_range(i, stabil_delay=None, scan_time=None, scan_num=None, hold_end=None):
     if isinstance(i, list):
         ranges = i
-    elif 'output_file' in i:
-        df = pd.read_excel(i + '_optims_output.xlsx', sheet_name='Output')
-        ranges = [(round(i + (stabil_delay / 60), 3), round(i + (param_change_delay/ 60), 3)) for i in df.iloc[:, 0].tolist()]
-    elif isinstance(i, str):
-        df = pd.read_excel(i, sheet_name='Output')
-        ranges = [(round(i + (stabil_delay / 60), 3), round(i + (param_change_delay/ 60), 3)) for i in df.iloc[:, 0].tolist()]
+    elif 'output_file' in i or isinstance(i, str):
+        if 'output_file' in i:
+            df = pd.read_excel(i + '_optims_output.xlsx', sheet_name='Output')
+        else:
+            df = pd.read_excel(i, sheet_name='Output')
+
+        if hold_end != 0:
+            scan_num = [scan_num] * len(df.iloc[:, 0].tolist())
+        else:
+            scan_num = [*[scan_num] * (len(df.iloc[:, 0].tolist()) - 1), hold_end]
+        ranges = [(round(i + (stabil_delay / 60), 3), round(i + ((stabil_delay + scan_num * scan_time) / 60), 3))
+                  for i in df.iloc[:, 0].tolist()]
     return ranges
 
 

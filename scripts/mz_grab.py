@@ -9,7 +9,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
-def mz_grab(ranges, scan_time, param_change_delay=None, stabil_delay=None, names=None, time_delay=0):
+def mz_grab(ranges, stabil_delay=None, scan_time=1, scan_num=8, hold_end=0, names=None, time_delay=0):
     """
     Grabs chromatograms of defined m/z values or ranges
 
@@ -17,15 +17,15 @@ def mz_grab(ranges, scan_time, param_change_delay=None, stabil_delay=None, names
     ------
     ranges : list of tuple or float
         Default (or starting) values of param_names
-    scan_time : int or float
-        Number of scans taken per second
-    param_change_delay : int or float
-        Time between parameter changes in seconds. Default is 10
-    stabil_delay : int or float
+    stabil_delay : int or float, optional
         Time required for instrument to stabilise, following parameter changes in seconds. Default is 2
-    names : list of str
+    scan_time : int or float, optional
+        Number of scans taken per second. Default is 1
+    scan_num : int or float, optional
+        Number of scans taken for each acquisition. Default is 8
+    names : list of str, optional
         Names of species. If names is None, names are of the format 'chrom_' + str(range). Default is None
-    time_delay : int
+    time_delay : int, optional
         Time delay used if software running slow. Default is 0
 
     Returns
@@ -36,7 +36,8 @@ def mz_grab(ranges, scan_time, param_change_delay=None, stabil_delay=None, names
 
     clicks1 = [(60, 30), (60, 240), (280, 240)]  # Clicks required to move around interface.
 
-    ranges = func.get_range(ranges, param_change_delay=param_change_delay, stabil_delay=stabil_delay)  # Get chrom_ranges for averaging if specified as file instead of list.
+    ranges = func.get_range(ranges, stabil_delay=stabil_delay, scan_time=scan_time,
+                            scan_num=scan_num, hold_end=hold_end)  # Get chrom_ranges for averaging if specified as file instead of list.
 
     if not names:
         names = ['chrom_' + str(i[0]) for i in ranges]
@@ -50,7 +51,7 @@ def mz_grab(ranges, scan_time, param_change_delay=None, stabil_delay=None, names
         func.copy_sic(ranges[i], chrom_coord, clicks1, ['tab'], [(70, 50)], time_delay)  # Input chromatogram bounds - turn off when testing offline
         func.avg_sic(chrom_coord, spec_coord, range_coord, [(90, 50)])  # Get average of chromatogram region and copy spec - turn off when testing offline
         spec = pd.read_clipboard(header=None)
-        spec.columns=['m/z', names[i]]  # Make DataFrame from spec
+        spec.columns = ['m/z', names[i]]  # Make DataFrame from spec
         spec.loc[:, names[i]].div(round((abs(ranges[i][1] - ranges[i][0])) / (scan_time / 60), 0))  # Convert sum intensity to average intensity
         all_spec.append(spec)
     return all_spec
@@ -91,12 +92,14 @@ def mz_grab_process(data, output_file, get_csv=False, get_excel=False, get_pic=F
 if __name__ == '__main__':
     output_file = r'C:\Users\Peter\Documents\Postdoctorate\Programs\mz_grab_test'  # Input the directory to save processed data, eg: output_dir = r'C:\Users\IanC\Documents\Experiments'
     ranges = r'C:\Users\Peter\Documents\Postdoctorate\Work\CBD to THC\Tandem MS\PJHW23022308_D9-THC_50UM_D8-THC_50UM_TRAPCE_0-30V_MS_opti_output.xlsx'  # Input list of tuples for ranges for averaging or OptiMS output filename in form r'filename'
-    scan_time = 1  # Experimental scan time
-    param_change_delay = 10  # Insert experimental delay between changing of parameters (only required if using OptiMS to determine ranges)
-    stabil_delay = 2  # Insert experimental delay for stabilisation (only required if using OptiMS to determine ranges)
-    time_delay = 0  # Insert a time delay between operations if MassLynx is running slow in format: int(x.x). 1.0 should be enough.
+    scan_time = 1  # experimental scan time
+    scan_num = 8  # input number of spectrum scans required for each parameter configuration (only required if using OptiMS to determine ranges)
+    hold_end = 0  # input number of scans desired to hold optimal parameters immediately before termination
+    stabil_delay = 2  # insert experimental delay for stabilisation (only required if using OptiMS to determine ranges)
+    time_delay = 0  # insert a time delay between operations if MassLynx is running slow in format: int(x.x). 1.0 should be enough.
 
     names = [str(i) + 'V' for i in range(32)]
 
-    data = mz_grab(ranges, scan_time, param_change_delay, stabil_delay, names=names, time_delay=time_delay)
+    data = mz_grab(ranges, stabil_delay=stabil_delay, scan_time=scan_time, scan_num=scan_num, hold_end=hold_end,
+                   names=names, time_delay=time_delay)
     mz_grab_process(data, output_file, get_csv=True, get_excel=True, get_pic=True)
