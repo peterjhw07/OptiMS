@@ -10,6 +10,8 @@ The code can be downloaded as a package for offline use using the conventional g
 
 ## Usage
 
+Tutorials videos on usage are a working progress.
+
 ### Main optimization and/or parameter alteration function
 
 ```python
