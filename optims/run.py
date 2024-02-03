@@ -1,4 +1,4 @@
-import scripts as OptiMS
+import optims as OptiMS
 import time
 
 # Input output file/folder locations

@@ -7,14 +7,14 @@ import os.path
 import pandas as pd
 import pickle
 import PIL
+import random
 from skopt import gp_minimize  # install as scikit-optimize module
 import sys
 import time
-import random
 # import timeit
 import warnings
-import func
-import instrument_map
+from optims import func
+from optims import instrument_map
 
 
 # These first four functions only apply if optimising mass spectrum parameters

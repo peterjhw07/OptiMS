@@ -11,7 +11,7 @@
 import pandas as pd
 import pyautogui as pg
 import warnings
-import func
+from optims import func
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 

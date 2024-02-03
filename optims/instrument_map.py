@@ -2,7 +2,7 @@
 
 import pandas as pd
 import pyautogui as pg
-import func
+from optims import func
 
 
 def chrom_refresh_custom(other_coord):

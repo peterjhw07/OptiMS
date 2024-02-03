@@ -5,8 +5,8 @@ import pyautogui as pg
 import pickle
 import sys
 import warnings
-import func
-import instrument_map
+from optims import func
+from optims import instrument_map
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
