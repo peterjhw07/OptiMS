@@ -1,4 +1,4 @@
-import scripts as OptiMS
+import optims as OptiMS
 import time
 
 # Input output file/folder locations
@@ -17,11 +17,11 @@ time_delay = 0  # insert a time delay between operations if MassLynx is running 
 get_optims = True
 
 # Input optimisation method details
-method_type = 'hone'  # input method type: 'defined' for chosen parameter values; 'exhaust' for exhaustive; 'random' for random combination from exhaustive; 'simple' for simple; 'hone' for honing; 'recover' to export last data set
+method_type = 'BO'  # input method type: 'defined' for chosen parameter values; 'exhaustive' for exhaustive; 'random' for random combination from exhaustive; 'OFAT' for OFAT; 'BO' for BO; 'recover' to export last data set
 method_metric = 'max'  # input metric defition: 'max' for maximising intensity of first chromatogram; 'ratio' for maximising intensity of first chromatogram to second; 'user def' to define own metric (below)
-n_random_points = 60  # input number of random combinations of parameters to guess, must be >0 (random and hone only).
-n_honing_points = 60  # input number of subsequent honing points required, must be >0 (hone only).
-method_break = 0  # input a factor for which the method will break and move onto the next parameter, if the new metric falls below method_break * previous (simple only).
+n_random_points = 60  # input number of random combinations of parameters to guess, must be >0 (random and BO only).
+n_honing_points = 60  # input number of subsequent honing points required, must be >0 (BO only).
+method_break = 0  # input a factor for which the method will break and move onto the next parameter, if the new metric falls below method_break * previous (OFAT only).
 
 # Input parameter details, including bounds
 tab_names = ['ES', 'Instrument']  # input names of param_in_tab in form ['Tab 1', ..., 'Tab X'] or None or [] if only tab used.
@@ -29,7 +29,6 @@ tab_rows = []  # input row of each tab in form [1, ..., 2] or None or [] if all 
 param_names = ['Capillary', 'Sampling Cone', 'Source Offset', 'Nebuliser', 'TrapCE', 'TransCE']  # input names of parameters in form ['Param 1, ..., Param X']
 default_params = [2.5, 0, 0, 2.5, 3, 0]  # input default start values in the form [0, ..., 0].
 param_bounds = [(0, 5, 0.1), (0, 100, 1), (0, 100, 1), (2.5, 4, 0.1), (0, 20, 0.1), (0, 10, 0.1)]  # input parameters bounds (lower bound, upper bound, increment value) in form e.g. [(X1, X2, X3), ..., (Y1, Y2, Y3)].
-# param_bounds for hone [(0, 5, 0.1), (0, 100, 1), (0, 100, 1), (2.5, 5, 0.1), (0, 20, 0.1)] or defined [(2.4, 11, 2.5, 6), (3, 50, 3, 5)] * 1000
 param_in_tab = [1, 1, 1, 1, 2, 2]  # enter param_in_tab required for each parameter in form [1, ..., X] or None or [] if all parameters in Tab 1.
 chrom_num = 3  # enter number of chromatograms in use. Input 0 if chromatograms cannot be copied. Else input integer > 0.
 
@@ -43,13 +42,12 @@ optims_names = []  # Insert desired names for regions as list, e.g. ['Region 1',
 
 # Define chrom_grab parameters
 get_chrom_grab = False  # Set true if wanting to grab multiple chromatograms, else False
-chrom_ranges = optims_ranges  # [922.8727, (924.8776, 925.8742), 926.8714, 927.8824, (928.8806, 929.8660)]  # Input list of mz values for extraction of chromatograms, where mz values are int (peak close to value) or tuple (range). E.g. [922.8727, (923.8727, 924.8776)]
+chrom_ranges = optims_ranges  # Input list of mz values for extraction of chromatograms, where mz values are int (peak close to value) or tuple (range). E.g. [922.8727, (923.8727, 924.8776)]
 chrom_names = []  # Insert desired names for regions as list, e.g. ['Region 1', 'Region 2', ...] or leave empty for automated naming, i.e. [].
 
 # Define mz_grab parameters
 get_mz_grab = False  # Set true if wanting to grab average mass spectra for certain chromatogram regions, else False
-# mz_ranges = 'output_file'  # [(0, 0.1), (0.2, 0.5), (1, 1.5)]
-mz_ranges = r'C:\Users\Peter\Documents\Postdoctorate\Work\CBD to THC\Tandem MS\PJHW23022308_D9-THC_50UM_D8-THC_50UM_TRAPCE_0-30V_MS_opti_output.xlsx'  # Input list of tuples for ranges for averaging or OptiMS output filename in form r'filename' or just 'output_file', using the filename from above
+mz_ranges = r'C:\Users\Peter\Documents\Postdoctorate\Work\CBD to THC\Tandem MS\PJHW23022308_D9-THC_50UM_D8-THC_50UM_TRAPCE_0-30V_MS_opti_output.xlsx'  # Input list of tuples for ranges for averaging , e.g. [(0, 0.1), (0.2, 0.5), (1, 1.5)], or OptiMS output filename in form r'filename' or just 'output_file', using the filename from above
 mz_names = [str(i) + 'V' for i in range(32)]  # Insert desired names for regions as list, e.g. ['Region 1', 'Region 2', ...] or leave empty for automated naming, i.e. [].
 
 if get_optims:

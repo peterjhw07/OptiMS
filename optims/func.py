@@ -1,15 +1,15 @@
 """General OptiMS functions"""
 
-import pyautogui as pg
-pg.FAILSAFE = True
-import time
-import pandas as pd
-import openpyxl
 import matplotlib.pyplot as plt
-import string
+import pandas as pd
+import pyautogui as pg
+import openpyxl
 import os.path
+import string
 import sys
+import time
 import traceback
+pg.FAILSAFE = True
 
 
 def gen_err(text):
