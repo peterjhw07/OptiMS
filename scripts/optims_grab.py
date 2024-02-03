@@ -25,7 +25,7 @@ def all_chrom_grab(ranges, names=None, other_coord_num=0, software=None, learn_c
         Number of other coordinates required for abstracting chromatogram data
     software : str, optional
         Input software. Currently accepted softwares are MassLynx (Waters), Xcalibur (Thermo) and custom (defined under instrument_map).
-        Default is None, which is not compatible with simple or hone method_type.
+        Default is None, which is not compatible with OFAT or BO method_type.
     learn_coord : bool
         Specifies whether on-screen coordinates need to be learnt. Default is True
     time_delay : int

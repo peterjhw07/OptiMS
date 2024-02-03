@@ -23,7 +23,7 @@ def custom_metric(avg_data):
     return avg_data[1]
 
 
-# Determining values for trail in optimization using lower bounds, upper bounds and step_size
+# Determining values for trial in optimization using lower bounds, upper bounds and step_size
 def param_list(bounds):
     return np.linspace(bounds[0], bounds[1], int(abs(bounds[1] - bounds[0]) / bounds[2]) + 1)
 
@@ -42,7 +42,7 @@ def other_error():
 
 # Main OptiMS program
 def run_optims(param_names, param_bounds, default_params=None, tab_names=None, tab_rows=None, param_in_tab=None,
-               method_type='hone', method_metric='max', chrom_num=1, other_coord_num=0, stabil_delay=2,
+               method_type='BO', method_metric='max', chrom_num=1, other_coord_num=0, stabil_delay=2,
                scan_time=1, scan_num=8, hold_end=16, n_random_points=60, n_honing_points=60, break_fac=0,
                software=None, learn_coord=True, pic_folder=None, output_file=None, get_csv=False, get_Excel=False):
     """
@@ -58,7 +58,7 @@ def run_optims(param_names, param_bounds, default_params=None, tab_names=None, t
         [(param 1 value 1, param 2 value 1, ...), (param 1 value 2, param 2 value 2, ...), ...]
         or str of previously exported '_optims_output.xlsx' file (both defined method_type only)
     default_params : list of float or None, optional
-        Default (or starting) values of param_names. Required for 'hone' and 'simple' methods. Default is None
+        Default (or starting) values of param_names. Required for OFAT and BO methods. Default is None
     tab_names : list of str or None, optional
         Names of tabs which param_names are located under. Optional if all param_names under single tab
     tab_rows : list of int or None, optional
@@ -68,15 +68,15 @@ def run_optims(param_names, param_bounds, default_params=None, tab_names=None, t
         Locations of param_names under tab_names starting from 1, e.g. [1, 1, 2, ...]
     method_type : str, optional
         Method for altering and optimising instrument conditions. Methods are:
-            exhaust - runs all possible combinations of parameters, as specified by param_bounds;
+            exhaustive - runs all possible combinations of parameters, as specified by param_bounds;
             random - runs random combinations of parameters, as specified by param_bounds;
             defined - runs set combinations of parameters, as specified by param_bounds
                         or input_param if specified;
-            simple - optimises instrument conditions by sequentially optimising each parameters,
+            OFAT - one factor at a time; optimises instrument conditions by sequentially optimising each parameters,
                         as specified by param_bounds;
-            hone - optimises instrument conditions by first default_params, then running random combination of
-                    parameters, as specified by param_bounds, then choosing the best combination
-                    and then making minor alterations to parameters to hone in on best solution
+            BO - Bayesian optimization; optimises instrument conditions by first default_params, then running random
+                        combination of parameters, as specified by param_bounds, then choosing the best combination
+                        and then making minor alterations to parameters to hone in on best solution
     method_metric : str, optional
         Metric for determining optimal conditions. Default is 'max'. Metrics are:
             max - maximises intensity of chromatogram 1. Default;
@@ -88,7 +88,7 @@ def run_optims(param_names, param_bounds, default_params=None, tab_names=None, t
     chrom_num : int, optional
         Number of chromatograms desired to be recorded. Default is 1.
         If chrom_num = 0, no chromatogram and hence chromatogram averages, errors or metrics will be recorded,
-        hence is not compatible with simple or hone method_type.
+        hence is not compatible with OFAT or BO method_type.
     other_coord_num : int, optional
         Number of other coordinates required for abstracting chromatogram data
     stabil_delay : float, optional
@@ -101,17 +101,17 @@ def run_optims(param_names, param_bounds, default_params=None, tab_names=None, t
         Number of scans for which determined optimised conditions are held at the end of optimisation.
         If chrom_num = 0, hold_end does not apply. Default is 16
     n_random_points : int, optional
-        Number of random points for use in random and hone method_type only. Default is 60
-    n_hone_points : int, optional
-        Number of honing points for use in hone method_type only. Default is 60
+        Number of random points for use in random and BO method_type only. Default is 60
+    n_honing_points : int, optional
+        Number of honing points for use in BO method_type only. Default is 60
     break_fac : float, optional
-        Factor only for the 'simple' method, for which the method will break if the new set of parameters
+        Factor only for the 'OFAT' method, for which the method will break if the new set of parameters
         with the new method_metric < break_fac * old method_metric. Default is 0, i.e. never breaks
     learn_coord : bool, optional
         Specifies whether on-screen coordinates need to be learnt. Default is True
     software : str, optional
         Input software. Currently accepted softwares are MassLynx (Waters), Xcalibur (Thermo) and custom (define above).
-        Default is None, which is not compatible with simple or hone method_type.
+        Default is None, which is not compatible with OFAT or BO method_type.
     pic_folder : str or None, optional
         Folder for exportation of screen grabbed pictures, for easier data processing.
         Default is None (screen grabs not taken)
@@ -154,8 +154,8 @@ def run_optims(param_names, param_bounds, default_params=None, tab_names=None, t
             func.left_click_enter_param(param_coord[i], params[i])
         return
 
-    # Simple optimization algorithm
-    def simple(data_store_filename, param_names, tab_coord, tab_rows, param_name, coord, start_param, bounds,
+    # OFAT optimization algorithm
+    def ofat(data_store_filename, param_names, tab_coord, tab_rows, param_name, coord, start_param, bounds,
                headers, exp_start_time, chrom_coord, other_coord, snip_screen_coord, stabil_delay, scan_time, scan_num,
                break_fac):
         opti_store_df = pd.read_pickle(data_store_filename)
@@ -176,10 +176,10 @@ def run_optims(param_names, param_bounds, default_params=None, tab_names=None, t
         func.left_click_enter_param(coord, opti_param[param_name])
         return opti_param
 
-    # Hone optimization algorithm based on Bayesian optimization
-    def hone(params, hone_factors, data_store_filename, param_names, tab_coord, param_in_tab, tab_rows, param_coord,
+    # BO optimization algorithm based on Bayesian optimization
+    def bo(params, factors, data_store_filename, param_names, tab_coord, param_in_tab, tab_rows, param_coord,
              headers, exp_start_time, chrom_coord, other_coord, snip_screen_coord, stabil_delay, scan_time, scan_num):
-        params_refac = [i * j for i, j in zip(params, hone_factors)]
+        params_refac = [i * j for i, j in zip(params, factors)]
         opti_store_df = pd.read_pickle(data_store_filename)
         if opti_store_df.shape[0] == 0 or not (opti_store_df[param_names].iloc[-1:] == np.array(params_refac)).all(
                 1).any():
@@ -313,8 +313,8 @@ def run_optims(param_names, param_bounds, default_params=None, tab_names=None, t
     param_store_filename = 'param_store_file.pkl'
 
     # Stop program if optimization not given data
-    if any(i in method_type for i in ('simple', 'hone')) and (chrom_num == 0 or software is None):
-        print('Simple and hone method types are not compatible with chrom_num = 0 and requires known software.\n'
+    if any(i in method_type for i in ('OFAT', 'BO')) and (chrom_num == 0 or software is None):
+        print('OFAT and BO method types are not compatible with chrom_num = 0 and requires known software.\n'
               'Please select a different method.')
         sys.exit()
 
@@ -383,13 +383,13 @@ def run_optims(param_names, param_bounds, default_params=None, tab_names=None, t
     # Confirm valid method
     method_type_try = False
     while method_type_try is False:
-        if any(i in method_type for i in ('defined', 'exhaust', 'random', 'simple', 'hone', 'recover')):
+        if any(i in method_type for i in ('defined', 'exhaustive', 'random', 'OFAT', 'BO', 'recover')):
             method_type_try = True
         else:
             method_type = input('Error! Invalid method_type. Enter valid method_type. \n')
 
-    # Define parameters used in 'exhaust', 'random' and 'defined' methods (if required)
-    if 'exhaust' in method_type:
+    # Define parameters used in 'exhaustive', 'random' and 'defined' methods (if required)
+    if 'exhaustive' in method_type:
         print('Calculating all parameter combinations. This may take some time.')
         all_param_val = []
         for i in param_bounds:
@@ -416,8 +416,8 @@ def run_optims(param_names, param_bounds, default_params=None, tab_names=None, t
         param_store_df = pd.concat([param_store_df, pd.DataFrame({'Parameter': ['param_combi'],
                                                                   'Values': [param_combi]})], ignore_index=True)
 
-    # Run 'exhaust', 'random' and 'defined' methods (if required)
-    if any(i in method_type for i in ('exhaust', 'random', 'defined')):
+    # Run exhaustive, random and defined methods (if required)
+    if any(i in method_type for i in ('exhaustive', 'random', 'defined')):
         if isinstance(stabil_delay, (int, float)):
             stabil_delay = [stabil_delay] * len(param_combi)
         opti_store_df = pd.DataFrame(columns=headers)
@@ -439,8 +439,8 @@ def run_optims(param_names, param_bounds, default_params=None, tab_names=None, t
         else:
             opti_param = 'Unknown'
 
-    # Run 'simple' method (if required)
-    elif 'simple' in method_type:
+    # Run OFAT method (if required)
+    elif 'OFAT' in method_type:
         start_param = default_params
         opti_store_df = pd.DataFrame(columns=headers)
         opti_store_df.to_pickle(data_store_filename)
@@ -448,10 +448,10 @@ def run_optims(param_names, param_bounds, default_params=None, tab_names=None, t
         change_all_params(param_names, tab_coord, param_in_tab, tab_rows, param_coord, default_params)
         try:
             for i in range(len(param_names)):
-                start_param = simple(data_store_filename, param_names, tab_coord[param_in_tab[i]],
-                                     tab_rows[param_in_tab[i]], param_names[i], param_coord[i], start_param,
-                                     param_bounds[i], headers, exp_start_time, chrom_coord, other_coord,
-                                     snip_screen_coord, stabil_delay, scan_time, scan_num, break_fac)
+                start_param = ofat(data_store_filename, param_names, tab_coord[param_in_tab[i]],
+                                   tab_rows[param_in_tab[i]], param_names[i], param_coord[i], start_param,
+                                   param_bounds[i], headers, exp_start_time, chrom_coord, other_coord,
+                                   snip_screen_coord, stabil_delay, scan_time, scan_num, break_fac)
         except IndexError:
             chrom_copy_error()
         except Exception:
@@ -460,27 +460,27 @@ def run_optims(param_names, param_bounds, default_params=None, tab_names=None, t
         opti_store_df = pd.read_pickle(data_store_filename)
         opti_param = start_param
 
-    # Run 'hone' method (if required)
-    elif 'hone' in method_type:
+    # Run BO method (if required)
+    elif 'BO' in method_type:
         opti_store_df = pd.DataFrame(columns=headers)
         opti_store_df.to_pickle(data_store_filename)
         exp_start_time = datetime.now().timestamp()
-        hone_ranges, hone_defaults, hone_factors = [], [], []
+        ranges, defaults, factors = [], [], []
         warnings.filterwarnings('ignore', message='The objective has been evaluated at this point before.')
         warnings.filterwarnings('ignore',
                                 message='string or file could not be read to its end due to unmatched data; '
                                         'this will raise a ValueError in the future.')
         for i in range(len(param_names)):
-            hone_ranges.append(
+            ranges.append(
                 [int(param_bounds[i][0] / param_bounds[i][2]), int(param_bounds[i][1] / param_bounds[i][2])])
-            hone_defaults.append(int(default_params[i] / param_bounds[i][2]))
-            hone_factors.append(param_bounds[i][2])
+            defaults.append(int(default_params[i] / param_bounds[i][2]))
+            factors.append(param_bounds[i][2])
 
-        lam_hone = lambda param_tup: hone(param_tup, hone_factors, data_store_filename, param_names, tab_coord,
-                                          param_in_tab, tab_rows, param_coord, headers, exp_start_time, chrom_coord,
-                                          other_coord, snip_screen_coord, stabil_delay, scan_time, scan_num)
+        lam_bo = lambda param_tup: bo(param_tup, factors, data_store_filename, param_names, tab_coord, param_in_tab,
+                                      tab_rows, param_coord, headers, exp_start_time, chrom_coord, other_coord,
+                                      snip_screen_coord, stabil_delay, scan_time, scan_num)
         try:
-            res_gp = gp_minimize(lam_hone, hone_ranges, x0=hone_defaults, n_initial_points=n_random_points,
+            res_gp = gp_minimize(lam_bo, ranges, x0=defaults, n_initial_points=n_random_points,
                                  n_calls=n_random_points + max(0, n_honing_points))
         except IndexError:
             chrom_copy_error()
@@ -491,7 +491,7 @@ def run_optims(param_names, param_bounds, default_params=None, tab_names=None, t
         change_all_params(param_names, tab_coord, param_in_tab, tab_rows, param_coord, opti_param)
 
     # Hold optimal conditions and end of run (if required)
-    if any(i in method_type for i in ('defined', 'exhaust', 'random', 'simple', 'hone')):
+    if any(i in method_type for i in ('defined', 'exhaustive', 'random', 'OFAT', 'BO')):
         if hold_end > 0 and chrom_num != 0 and software:
             opti_store_df = end_hold(opti_store_df, data_store_filename, headers, exp_start_time, opti_param,
                                      chrom_coord, other_coord, snip_screen_coord, hold_end, stabil_delay,
@@ -530,11 +530,11 @@ def run_optims(param_names, param_bounds, default_params=None, tab_names=None, t
 
 if __name__ == "__main__":
     # Input optimisation method details
-    method_type = 'random'  # input method type: 'defined' for chosen parameter values; 'exhaust' for exhaustive; 'random' for random combination from exhaustive; 'simple' for simple; 'hone' for honing; 'recover' to export last data set
+    method_type = 'random'  # input method type: 'defined' for chosen parameter values; 'exhaustive' for exhaustive; 'random' for random combination from exhaustive; 'OFAT' for one factor at a time; 'BO' for Bayesian optimization; 'recover' to export last data set
     method_metric = 'max'  # input metric defition: 'max' for maximising intensity of first chromatogram; 'ratio' for maximising intensity of first chromatogram to second; 'custom' to define custom metric (below)
-    method_break = 0  # input a factor for which the method will break and move onto the next parameter, if the new metric falls below method_break * previous (simple only).
-    n_random_points = 5  # input number of random combinations of parameters to guess, must be >0 (random and hone only).
-    n_honing_points = 5  # input number of subsequent honing points required, must be >0 (hone only).
+    method_break = 0  # input a factor for which the method will break and move onto the next parameter, if the new metric falls below method_break * previous (OFAT only).
+    n_random_points = 5  # input number of random combinations of parameters to guess, must be >0 (random and BO only).
+    n_honing_points = 5  # input number of subsequent honing points required, must be >0 (BO only).
 
     # Input parameter details, including bounds
     tab_names = ['ES', 'Instrument']  # input names of param_in_tab in form ['Tab 1', ..., 'Tab X'] or None or [] if only tab used.
