@@ -2,7 +2,7 @@
 
 Optimization Mass Spectrometry (OptiMS) is a Pythonic application programming interface (API) which automates optimization and/or parameter alteration in mass spectrometry (MS). It was originally designed for use with Waters MassLynx but the code can be adapted to be used with a range of mass spectrometers and their software. Spectrometers used in conjunction with OptiMS must be able to store chromatographic data and have their parameters changed during acquisition, while optimization can only be performed providing the instrument software supports simple online extraction of chromatographic data.
 
-A pre-print describing the code and its applications is available at DOI:[10.26434/chemrxiv-2023-77wdm](https://chemrxiv.org/engage/chemrxiv/article-details/650b36a460c37f4f76244741). 
+A manuscript describing the code and its applications is published in a peer-review journal at DOI:[10.1021/jasms.3c00354](https://pubs.acs.org/doi/abs/10.1021/jasms.3c00354). Please cite this manuscript should OptiMS be used in your work. Additionally, an open-access pre-print version is available at DOI:[10.26434/chemrxiv-2023-77wdm](https://chemrxiv.org/engage/chemrxiv/article-details/650b36a460c37f4f76244741). 
 
 ## Installation
 
