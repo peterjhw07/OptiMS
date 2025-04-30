@@ -22,7 +22,7 @@ import optims
 optims.run_optims(**kwargs)
 ```
 
-Optimization methods include one factor at a time 'OFAT', exhaustive 'exhaustive', and Bayesian optimization 'BO'. Further methods and other parameters are explained in the optims.py file.
+Optimization methods include one factor at a time 'OFAT', exhaustive 'exhaustive', and Bayesian optimization 'BO'. Further methods and other parameters are documented in the optims.py file.
 
 ### Adapting the code to different instruments and software
 
@@ -41,6 +41,6 @@ optims.chrom_grab(**kwargs)
 optims.mz_grab(**kwargs)
 ```
 
-## Contributing
+## Contribution
 
 Ideally, OptiMS would include presets for various instruments and software. Therefore, feedback regarding the adaptations made by users to facilitate the interfacing of OptiMS with their instruments and software would be gratefully received.
